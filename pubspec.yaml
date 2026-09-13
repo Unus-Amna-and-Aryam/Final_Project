@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  fvp: ^0.38.1
+  google_fonts: ^8.2.1
+  video_player: ^2.14.0
 
 dev_dependencies:
   flutter_test:
@@ -17,3 +20,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/logo/
+    - assets/images/

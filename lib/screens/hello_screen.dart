@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 import 'package:final_project/constants/app_colors.dart';
+import 'package:final_project/screens/second_screen.dart';
 
 class HelloScreen extends StatefulWidget {
   const HelloScreen({super.key});
@@ -20,18 +22,21 @@ class _HelloScreenState extends State<HelloScreen>
   static const double _logoTopFactor = 0.12;
   static const double _logoLeftFactor = 0.01;
 
-  // The "أُنُس" text image sits beside the logo, to its right.
-  static const double _textGapFactor = 0.02; // gap between logo and image
-  static const double _textRightMarginFactor = 0.02;
+  // The "أُنُس" text image sits beside the logo, close to it and aligned to
+  // the same top level as the logo video.
+  static const double _textLeftFactor = 0.56;
+  static const double _textWidthFactor = 0.46;
   static const double _textAspectRatio = 890 / 838; // unus.png width / height
 
-  // The source video has black letterboxing baked into the frame around the
-  // actual animated mark. Measured directly on a device screenshot: the
-  // visible mark occupies roughly 221x212px inside a 755x425px 16:9 frame,
-  // centered. Displaying the video at this tighter aspect ratio with
-  // BoxFit.cover crops that black border away instead of showing the full
-  // raw frame.
+  // The source video has a black border baked into the frame around the
+  // actual animated mark on all four sides. Measured directly on a device
+  // screenshot: the visible mark occupies roughly 221x212px inside a
+  // 755x425px 16:9 frame, centered. Reshaping the display box to that
+  // tighter aspect ratio with BoxFit.cover only crops the axis the fit
+  // doesn't constrain to (here, width), so an extra uniform zoom is needed
+  // on top to crop the remaining border on every side.
   static const double _logoContentAspectRatio = 221 / 212;
+  static const double _logoExtraZoom = 1.6;
 
   late final VideoPlayerController _controller;
 
@@ -40,8 +45,8 @@ class _HelloScreenState extends State<HelloScreen>
   late final AnimationController _slideController;
   late final Animation<double> _slideAnimation;
 
-  // The text image stays hidden for the first second on the page, then
-  // fades in.
+  // The name and phrase stay hidden until the logo video has actually
+  // started playing, then fade in shortly after.
   bool _showText = false;
   Timer? _textTimer;
 
@@ -70,17 +75,18 @@ class _HelloScreenState extends State<HelloScreen>
         if (!mounted) return;
         setState(() {});
         _controller.play(); // autoplay as soon as the video is ready
+
+        // Only reveal the name and phrase once the logo video is actually
+        // playing, shortly after it starts.
+        _textTimer = Timer(const Duration(milliseconds: 600), () {
+          if (!mounted) return;
+          setState(() => _showText = true);
+        });
       });
     _controller.addListener(_holdFinalFrame);
 
-    // Start the slide-in immediately so it runs alongside the video.
+    // Start the slide-in immediately so the logo appears first.
     _slideController.forward();
-
-    // Reveal the text exactly one second after this page starts.
-    _textTimer = Timer(const Duration(seconds: 1), () {
-      if (!mounted) return;
-      setState(() => _showText = true);
-    });
   }
 
   void _holdFinalFrame() {
@@ -113,15 +119,12 @@ class _HelloScreenState extends State<HelloScreen>
     final logoTop = screenSize.height * _logoTopFactor;
     final logoLeft = screenSize.width * _logoLeftFactor;
     final logoStartLeft = -logoWidth; // fully off-screen to the left
-    final logoRight = logoLeft + logoWidth;
 
-    // Image sits to the right of the logo, filling the remaining width and
-    // vertically centered against the logo's box.
-    final textLeft = logoRight + screenSize.width * _textGapFactor;
-    final textWidth =
-        screenSize.width - textLeft - screenSize.width * _textRightMarginFactor;
+    // Image sits to the right of the logo, at the same top level as it.
+    final textLeft = screenSize.width * _textLeftFactor;
+    final textWidth = screenSize.width * _textWidthFactor;
     final textHeight = textWidth / _textAspectRatio;
-    final textTop = logoTop + (logoHeight - textHeight) / 2;
+    final textTop = logoTop;
 
     final logoContent = SizedBox(
       width: logoWidth,
@@ -131,13 +134,20 @@ class _HelloScreenState extends State<HelloScreen>
               child: Center(
                 child: AspectRatio(
                   aspectRatio: _logoContentAspectRatio,
+                  // The ClipRect here is sized to this tight aspect box
+                  // (not the wider outer SizedBox), so the extra zoom below
+                  // actually gets cropped against the video's own frame
+                  // instead of the much larger logo container.
                   child: ClipRect(
-                    child: FittedBox(
-                      fit: BoxFit.cover,
-                      child: SizedBox(
-                        width: _controller.value.size.width,
-                        height: _controller.value.size.height,
-                        child: VideoPlayer(_controller),
+                    child: Transform.scale(
+                      scale: _logoExtraZoom,
+                      child: FittedBox(
+                        fit: BoxFit.cover,
+                        child: SizedBox(
+                          width: _controller.value.size.width,
+                          height: _controller.value.size.height,
+                          child: VideoPlayer(_controller),
+                        ),
                       ),
                     ),
                   ),
@@ -149,33 +159,94 @@ class _HelloScreenState extends State<HelloScreen>
 
     return Scaffold(
       backgroundColor: AppColors.Burgundy,
-      body: Stack(
-        children: [
-          AnimatedBuilder(
-            animation: _slideAnimation,
-            builder: (context, child) {
-              final currentLeft =
-                  logoStartLeft +
-                  (logoLeft - logoStartLeft) * _slideAnimation.value;
-              return Positioned(
-                top: logoTop,
-                left: currentLeft,
-                child: child!,
-              );
-            },
-            child: logoContent,
-          ),
-          Positioned(
-            top: textTop,
-            left: textLeft,
-            child: AnimatedOpacity(
-              opacity: _showText ? 1 : 0,
-              duration: const Duration(milliseconds: 400),
-              child: Image.asset('assets/images/unus.png', width: textWidth),
+      body: GestureDetector(
+        // Swiping up anywhere on the page opens the next screen.
+        onVerticalDragEnd: (details) {
+          final velocity = details.primaryVelocity ?? 0;
+          if (velocity < -200) _goToSecondScreen();
+        },
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/hello_background.png',
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
-        ],
+            AnimatedBuilder(
+              animation: _slideAnimation,
+              builder: (context, child) {
+                final currentLeft =
+                    logoStartLeft +
+                    (logoLeft - logoStartLeft) * _slideAnimation.value;
+                return Positioned(
+                  top: logoTop,
+                  left: currentLeft,
+                  child: child!,
+                );
+              },
+              child: logoContent,
+            ),
+            Positioned(
+              top: textTop,
+              left: textLeft,
+              child: AnimatedOpacity(
+                opacity: _showText ? 1 : 0,
+                duration: const Duration(milliseconds: 400),
+                child: Image.asset(
+                  'assets/images/unus.png',
+                  width: textWidth,
+                  height: textHeight,
+                ),
+              ),
+            ),
+            Positioned.fill(
+              child: Align(
+                alignment: const Alignment(0, 0.35),
+                child: AnimatedOpacity(
+                  opacity: _showText ? 1 : 0,
+                  duration: const Duration(milliseconds: 400),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: screenSize.width * 0.06,
+                    ),
+                    child: Text(
+                      'بهم نستأنس … بأُنس ننظّم',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.amiri(
+                        color: AppColors.Gold,
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: screenSize.height * 0.04,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: IconButton(
+                  onPressed: _goToSecondScreen,
+                  icon: Icon(
+                    Icons.keyboard_arrow_up,
+                    color: AppColors.Gold,
+                    size: 40,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  void _goToSecondScreen() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const SecondScreen()),
     );
   }
 }
