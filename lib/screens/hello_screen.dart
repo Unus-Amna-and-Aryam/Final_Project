@@ -246,7 +246,7 @@ class _HelloScreenState extends State<HelloScreen>
 
   void _goToSecondScreen() {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const CreateAcountScreen()),
+      MaterialPageRoute(builder: (context) => const CreatAcountScreen()),
     );
   }
 }
