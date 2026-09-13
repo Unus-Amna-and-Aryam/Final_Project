@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:video_player/video_player.dart';
 import 'package:final_project/constants/app_colors.dart';
-import 'package:final_project/screens/second_screen.dart';
+import 'package:final_project/screens/create_acount_screen.dart';
 
 class HelloScreen extends StatefulWidget {
   const HelloScreen({super.key});
@@ -15,16 +15,12 @@ class HelloScreen extends StatefulWidget {
 
 class _HelloScreenState extends State<HelloScreen>
     with SingleTickerProviderStateMixin {
-  // All sizing/position below is relative to the screen (0.0–1.0), so the
-  // logo scales with the device instead of using fixed pixel values.
+  // All sizing below is relative to the screen (0.0–1.0), so the logo scales
+  // with the device instead of using fixed pixel values.
   static const double _logoWidthFactor = 0.70;
-  static const double _logoHeightFactor = 0.40;
-  static const double _logoTopFactor = 0.12;
-  static const double _logoLeftFactor = 0.01;
+  static const double _logoHeightFactor = 0.50;
 
-  // The "أُنُس" text image sits beside the logo, close to it and aligned to
-  // the same top level as the logo video.
-  static const double _textLeftFactor = 0.56;
+  // The "أُنُس" text image, same size as before, now placed above the logo.
   static const double _textWidthFactor = 0.46;
   static const double _textAspectRatio = 890 / 838; // unus.png width / height
 
@@ -116,15 +112,17 @@ class _HelloScreenState extends State<HelloScreen>
     final screenSize = MediaQuery.of(context).size;
     final logoWidth = screenSize.width * _logoWidthFactor;
     final logoHeight = screenSize.width * _logoHeightFactor;
-    final logoTop = screenSize.height * _logoTopFactor;
-    final logoLeft = screenSize.width * _logoLeftFactor;
+    // Logo centered in the middle of the screen.
+    final logoTop = (screenSize.height - logoHeight) / 2;
+    final logoLeft = (screenSize.width - logoWidth) / 2;
     final logoStartLeft = -logoWidth; // fully off-screen to the left
 
-    // Image sits to the right of the logo, at the same top level as it.
-    final textLeft = screenSize.width * _textLeftFactor;
+    // Name sits above the logo, horizontally centered with it; same size as
+    // before.
     final textWidth = screenSize.width * _textWidthFactor;
     final textHeight = textWidth / _textAspectRatio;
-    final textTop = logoTop;
+    final textLeft = (screenSize.width - textWidth) / 2;
+    final textTop = logoTop - textHeight - screenSize.height * 0.08;
 
     final logoContent = SizedBox(
       width: logoWidth,
@@ -200,9 +198,11 @@ class _HelloScreenState extends State<HelloScreen>
                 ),
               ),
             ),
-            Positioned.fill(
-              child: Align(
-                alignment: const Alignment(0, 0.35),
+            Positioned(
+              top: logoTop + logoHeight + screenSize.height * 0.02,
+              left: 0,
+              right: 0,
+              child: Center(
                 child: AnimatedOpacity(
                   opacity: _showText ? 1 : 0,
                   duration: const Duration(milliseconds: 400),
@@ -215,7 +215,7 @@ class _HelloScreenState extends State<HelloScreen>
                       textAlign: TextAlign.center,
                       style: GoogleFonts.amiri(
                         color: AppColors.Gold,
-                        fontSize: 30,
+                        fontSize: 32,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -246,7 +246,7 @@ class _HelloScreenState extends State<HelloScreen>
 
   void _goToSecondScreen() {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const SecondScreen()),
+      MaterialPageRoute(builder: (context) => const CreateAcountScreen()),
     );
   }
 }
