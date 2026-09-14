@@ -1,0 +1,666 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:final_project/constants/app_colors.dart';
+import 'package:final_project/models/questions_model.dart';
+import 'package:final_project/screens/therd_screen.dart';
+
+/// Pushes the onboarding question flow starting at the first question in
+/// [onboardingQuestions]. Each question advances to the next on "التالي";
+/// after the last one, it hands off to [TherdScreen].
+void startOnboardingFlow(BuildContext context) {
+  _pushQuestion(context, 0);
+}
+
+void _pushQuestion(BuildContext context, int index) {
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (context) => QuestionScreen(
+        question: onboardingQuestions[index],
+        onNext: (selectedIds) {
+          final nextIndex = index + 1;
+          if (nextIndex < onboardingQuestions.length) {
+            _pushQuestion(context, nextIndex);
+          } else {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const TherdScreen()),
+            );
+          }
+        },
+      ),
+    ),
+  );
+}
+
+/// One onboarding question page: progress header, a grid/list/wrap of
+/// selectable option cards (driven by [QuestionModel.layout]), and a
+/// pinned "التالي" button. Reusable across all onboarding questions.
+class QuestionScreen extends StatefulWidget {
+  final QuestionModel question;
+  final void Function(List<String> selectedIds) onNext;
+
+  const QuestionScreen({
+    super.key,
+    required this.question,
+    required this.onNext,
+  });
+
+  @override
+  State<QuestionScreen> createState() => _QuestionScreenState();
+}
+
+class _QuestionScreenState extends State<QuestionScreen> {
+  late Set<String> _selectedIds;
+  // Index into question.sliderSteps; only meaningful when layout is slider.
+  int _sliderIndex = 0;
+  // Which category ids are currently expanded; only meaningful when layout
+  // is expandableMultiSelect. Purely visual — never affects _selectedIds.
+  final Set<String> _expandedCategoryIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.question.layout == QuestionLayout.slider) {
+      final steps = widget.question.sliderSteps!;
+      _sliderIndex = 0;
+      _selectedIds = {steps[_sliderIndex].toString()};
+    } else if (widget.question.layout == QuestionLayout.expandableMultiSelect) {
+      _selectedIds = widget.question.categories!
+          .expand((category) => category.items)
+          .where((item) => item.isDefaultSelected)
+          .map((item) => item.id)
+          .toSet();
+    } else {
+      _selectedIds = widget.question.options
+          .where((option) => option.isDefaultSelected)
+          .map((option) => option.id)
+          .toSet();
+    }
+  }
+
+  void _setSliderIndex(int index) {
+    final steps = widget.question.sliderSteps!;
+    setState(() {
+      _sliderIndex = index;
+      _selectedIds = {steps[_sliderIndex].toString()};
+    });
+  }
+
+  void _toggle(String id) {
+    setState(() {
+      if (widget.question.allowMultiSelect) {
+        if (_selectedIds.contains(id)) {
+          _selectedIds.remove(id);
+        } else {
+          _selectedIds.add(id);
+        }
+      } else {
+        _selectedIds = {id};
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final question = widget.question;
+
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: AppColors.Beige,
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            icon: const BackButtonIcon(),
+                            color: AppColors.Burgundy,
+                            onPressed: () => Navigator.of(context).maybePop(),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'خطوة ${question.step} من ${question.totalSteps}',
+                      style: GoogleFonts.amiri(
+                        fontSize: 13,
+                        color: AppColors.Burgundy_White,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: List.generate(question.totalSteps, (i) {
+                        final isActive = i == question.step - 1;
+                        return Expanded(
+                          child: Container(
+                            height: 4,
+                            margin: EdgeInsets.only(
+                              left: i == question.totalSteps - 1 ? 0 : 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? AppColors.Gold
+                                  : AppColors.Burgundy.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      question.title,
+                      textAlign: TextAlign.right,
+                      style: GoogleFonts.amiri(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.Burgundy,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: _buildOptions(question),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed: _selectedIds.isEmpty
+                        ? null
+                        : () => widget.onNext(_selectedIds.toList()),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.Burgundy,
+                      disabledBackgroundColor: AppColors.Burgundy.withOpacity(
+                        0.4,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'التالي',
+                          style: GoogleFonts.amiri(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(Icons.arrow_back, color: AppColors.white, size: 20),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOptions(QuestionModel question) {
+    switch (question.layout) {
+      case QuestionLayout.grid2:
+        return GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 14,
+          crossAxisSpacing: 14,
+          childAspectRatio: 0.95,
+          children: question.options
+              .map((option) => _OptionCard(
+                    option: option,
+                    isSelected: _selectedIds.contains(option.id),
+                    onTap: () => _toggle(option.id),
+                    useWatermarkStyle: question.id == 'event_type',
+                  ))
+              .toList(),
+        );
+      case QuestionLayout.singleColumn:
+        return Column(
+          children: question.options
+              .map(
+                (option) => Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: _OptionCard(
+                      option: option,
+                      isSelected: _selectedIds.contains(option.id),
+                      onTap: () => _toggle(option.id),
+                      useWatermarkStyle: question.id == 'event_type',
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        );
+      case QuestionLayout.wrap:
+        return Wrap(
+          spacing: 14,
+          runSpacing: 14,
+          children: question.options
+              .map(
+                (option) => SizedBox(
+                  width: 150,
+                  child: _OptionCard(
+                    option: option,
+                    isSelected: _selectedIds.contains(option.id),
+                    onTap: () => _toggle(option.id),
+                    useWatermarkStyle: question.id == 'event_type',
+                  ),
+                ),
+              )
+              .toList(),
+        );
+      case QuestionLayout.slider:
+        return _buildSlider(question);
+      case QuestionLayout.expandableMultiSelect:
+        return _buildExpandableList(question);
+    }
+  }
+
+  Widget _buildExpandableList(QuestionModel question) {
+    return Column(
+      children: question.categories!.map((category) {
+        final isExpanded = _expandedCategoryIds.contains(category.id);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: BorderRadius.circular(16),
+              // Always Burgundy, collapsed or expanded — not conditional on
+              // isExpanded, so it never changes shade or disappears.
+              border: Border.all(color: AppColors.Burgundy, width: 1.2),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      if (isExpanded) {
+                        _expandedCategoryIds.remove(category.id);
+                      } else {
+                        _expandedCategoryIds.add(category.id);
+                      }
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 22,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          category.title,
+                          style: GoogleFonts.amiri(
+                            fontSize: 19,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.Burgundy,
+                          ),
+                        ),
+                        Icon(
+                          isExpanded
+                              ? Icons.keyboard_arrow_up
+                              : Icons.keyboard_arrow_down,
+                          color: AppColors.Burgundy,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (isExpanded)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: category.items.map((item) {
+                        final isSelected = _selectedIds.contains(item.id);
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: GestureDetector(
+                            onTap: () => _toggle(item.id),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isSelected
+                                      ? Icons.check_box
+                                      : Icons.check_box_outline_blank,
+                                  size: 22,
+                                  color: isSelected
+                                      ? AppColors.Gold
+                                      : Colors.grey.shade300,
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  item.title,
+                                  style: GoogleFonts.amiri(
+                                    fontSize: 18,
+                                    color: AppColors.Burgundy,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildSlider(QuestionModel question) {
+    final steps = question.sliderSteps!;
+    final unit = question.sliderUnitLabel ?? '';
+    final currentValue = steps[_sliderIndex];
+
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            children: [
+              Text(
+                '$currentValue',
+                style: GoogleFonts.amiri(
+                  fontSize: 40,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.Burgundy,
+                ),
+              ),
+              if (unit.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  unit,
+                  style: GoogleFonts.amiri(
+                    fontSize: 14,
+                    color: AppColors.Burgundy_White,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  activeTrackColor: AppColors.Gold,
+                  inactiveTrackColor: Colors.grey.shade300,
+                  thumbColor: AppColors.Gold,
+                  overlayColor: AppColors.Gold.withOpacity(0.2),
+                  trackHeight: 4,
+                ),
+                child: Slider(
+                  // The slider only ever operates on the step index, so it
+                  // always snaps to one of [steps] and never a value
+                  // in-between — divisions = steps.length - 1 makes each
+                  // step its own stop regardless of the numeric gaps
+                  // between them (e.g. 10→50 vs 50→100).
+                  value: _sliderIndex.toDouble(),
+                  min: 0,
+                  max: (steps.length - 1).toDouble(),
+                  divisions: steps.length - 1,
+                  onChanged: (value) => _setSliderIndex(value.round()),
+                ),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '${steps.first}',
+                    style: GoogleFonts.amiri(
+                      fontSize: 12,
+                      color: AppColors.Burgundy_White,
+                    ),
+                  ),
+                  Text(
+                    '${steps.last}',
+                    style: GoogleFonts.amiri(
+                      fontSize: 12,
+                      color: AppColors.Burgundy_White,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        if (question.sliderQuickPicks != null) ...[
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            alignment: WrapAlignment.center,
+            children: question.sliderQuickPicks!.map((pick) {
+              final index = steps.indexOf(pick);
+              final isActive = index == _sliderIndex;
+              final label =
+                  '$pick${unit.isNotEmpty ? ' $unit' : ''}${pick == steps.last ? '+' : ''}';
+              return GestureDetector(
+                onTap: index == -1 ? null : () => _setSliderIndex(index),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isActive ? AppColors.Burgundy : AppColors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isActive
+                          ? AppColors.Burgundy
+                          : Colors.grey.shade300,
+                    ),
+                  ),
+                  child: Text(
+                    label,
+                    style: GoogleFonts.amiri(
+                      fontSize: 13,
+                      color: isActive ? AppColors.white : AppColors.Burgundy,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _OptionCard extends StatelessWidget {
+  final QuestionOption option;
+  final bool isSelected;
+  final VoidCallback onTap;
+  // Only true for question 1 ("اختر مناسبتك مع أُنس") — that question's
+  // redesign (no icons, centered bigger text, logo watermark on selection)
+  // must not leak into question 2, which also uses grid2 and this same
+  // widget. false restores the original icon-based card look exactly.
+  final bool useWatermarkStyle;
+
+  const _OptionCard({
+    required this.option,
+    required this.isSelected,
+    required this.onTap,
+    required this.useWatermarkStyle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return useWatermarkStyle ? _buildWatermarkStyle() : _buildClassicStyle();
+  }
+
+  // Question 1 only: no icon/iconImagePath ever shown — just centered,
+  // larger title + subtitle, with a faint full-card logo watermark that
+  // only appears once selected.
+  Widget _buildWatermarkStyle() {
+    final foreground = Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            option.title,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.amiri(
+              fontSize: 19,
+              fontWeight: FontWeight.bold,
+              color: isSelected ? AppColors.white : AppColors.Burgundy,
+            ),
+          ),
+          if (option.subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              option.subtitle!,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.amiri(
+                fontSize: 14,
+                color: isSelected
+                    ? AppColors.white
+                    : AppColors.Burgundy_White,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.Burgundy : AppColors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: isSelected
+              ? null
+              : Border.all(color: Colors.grey.shade200),
+        ),
+        child: isSelected
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Opacity(
+                        opacity: 0.2,
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    foreground,
+                  ],
+                ),
+              )
+            : foreground,
+      ),
+    );
+  }
+
+  // Every other question using cards (currently just question 2): original
+  // look, unchanged by question 1's redesign — icon/iconImagePath always
+  // shown, left-aligned text, no watermark.
+  Widget _buildClassicStyle() {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.Burgundy : AppColors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: isSelected
+              ? null
+              : Border.all(color: Colors.grey.shade200),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            option.iconImagePath != null
+                ? Image.asset(
+                    option.iconImagePath!,
+                    width: 18,
+                    height: 18,
+                    fit: BoxFit.contain,
+                  )
+                : Icon(
+                    option.icon,
+                    size: 18,
+                    color: isSelected
+                        ? AppColors.Gold
+                        : AppColors.Burgundy_White,
+                  ),
+            const SizedBox(height: 10),
+            Text(
+              option.title,
+              style: GoogleFonts.amiri(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: isSelected ? AppColors.white : AppColors.Burgundy,
+              ),
+            ),
+            if (option.subtitle != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                option.subtitle!,
+                style: GoogleFonts.amiri(
+                  fontSize: 12,
+                  color: isSelected
+                      ? AppColors.white
+                      : AppColors.Burgundy_White,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

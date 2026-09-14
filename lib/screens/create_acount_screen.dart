@@ -1,4 +1,7 @@
+import 'package:final_project/constants/app_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:final_project/screens/question_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class CreatAcountScreen extends StatefulWidget {
   const CreatAcountScreen({super.key});
@@ -10,17 +13,31 @@ class CreatAcountScreen extends StatefulWidget {
 class _AuthScreenState extends State<CreatAcountScreen> {
   int isSignUp = 0;
 
-  final Color backgroundColor = const Color.fromARGB(255, 244, 238, 228);   
-  final Color topBubbleColor = const Color(0xFF4A1620); 
+  final Color backgroundColor = AppColors.Beige;
+  final Color topBubbleColor = AppColors.Burgundy;
 
-  final Color toggleContainerBg = Colors.white;             
-  final Color toggleActiveColor = const Color.fromARGB(255, 104, 62, 70);    
+  final Color toggleContainerBg = AppColors.white;             
+  final Color toggleActiveColor = AppColors.Burgundy_White; 
   final Color toggleInactiveColor = const Color.fromARGB(0, 134, 78, 78);      
-  final Color toggleActiveTextColor = Colors.white;         
+  final Color toggleActiveTextColor = AppColors.white;         
   final Color toggleInactiveTextColor = Colors.grey;       
 
-  final Color mainButtonColor =const Color.fromARGB(255, 104, 62, 70);    
-  final Color mainButtonTextColor = Colors.white;           
+  final Color mainButtonColor = AppColors.Burgundy_White;
+  final Color mainButtonTextColor = AppColors.white;
+
+  // Logo image, pinned to the top-left of the upper bubble. Adjust these to
+  // resize/reposition it.
+  final double logoWidth = 200;
+  final double logoHeight = 200;
+  final double logoTop = 50;
+  final double logoLeft = 5;
+
+  // "unus" image, top-right of the upper bubble. Adjust these to freely
+  // resize/reposition it within the bubble.
+  final double unusWidth = 240;
+  final double unusHeight = 240;
+  final double unusTop = 40;
+  final double unusRight = 0;
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -34,34 +51,77 @@ class _AuthScreenState extends State<CreatAcountScreen> {
     super.dispose();
   }
 
+  void _skipToOnboarding() {
+    startOnboardingFlow(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
     return Directionality(
-      textDirection: TextDirection.rtl, 
+      textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: backgroundColor,
-        body: Stack(
+        // Keep the bottom "skip" bubble fixed in place instead of being
+        // pushed up when the keyboard appears; fields still scroll into
+        // view via the SingleChildScrollView below.
+        resizeToAvoidBottomInset: false,
+        // Scaffold.body gives its child loose constraints, so a bare Stack
+        // shrinks to fit its tallest non-positioned child (the scroll
+        // view's content) instead of filling the screen. That left
+        // Positioned(bottom: 0) anchored short of the real screen edge.
+        // Forcing the Stack to the full screen size fixes it.
+        body: SizedBox(
+          width: size.width,
+          height: size.height,
+          child: Stack(
           children: [
-       
+
             ClipPath(
               clipper: ConcaveBubbleClipper(),
               child: Container(
                 width: size.width,
-                height: size.height * 0.42,
+                // Derived from width (not height) so the bubble keeps the
+                // same proportions/curve on any screen aspect ratio instead
+                // of stretching or shrinking abnormally.
+                height: size.width * 0.93,
                 color: topBubbleColor,
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 28.0, top: 20.0, left: 28.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 4),
-                      
-                      ],
+                child: Stack(
+                  children: [
+                    SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 28.0, top: 20.0, left: 28.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 4),
+
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                    Positioned(
+                      top: logoTop,
+                      left: logoLeft,
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        width: logoWidth,
+                        height: logoHeight,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    Positioned(
+                      top: unusTop,
+                      right: unusRight,
+                      child: Image.asset(
+                        'assets/images/unus.png',
+                        width: unusWidth,
+                        height: unusHeight,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -105,9 +165,10 @@ class _AuthScreenState extends State<CreatAcountScreen> {
                                 alignment: Alignment.center,
                                 child: Text(
                                   "تسجيل دخول",
-                                  style: TextStyle(
+                                  style: 
+                                  GoogleFonts.amiri(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 15,
+                                    fontSize: 18,
                                     color: isSignUp == 0 ? toggleActiveTextColor : toggleInactiveTextColor,
                                   ),
                                 ),
@@ -130,9 +191,9 @@ class _AuthScreenState extends State<CreatAcountScreen> {
                                 alignment: Alignment.center,
                                 child: Text(
                                   "مستخدم جديد",
-                                  style: TextStyle(
+                                  style: GoogleFonts.amiri(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 15,
+                                    fontSize: 18,
                                     color: isSignUp == 1 ? toggleActiveTextColor : toggleInactiveTextColor,
                                   ),
                                 ),
@@ -147,13 +208,14 @@ class _AuthScreenState extends State<CreatAcountScreen> {
 
                     if (isSignUp == 0) ...[
                       _buildCustomTextField(
-                        labelText: "البريد الإلكتروني",
+                        labelText: "البريد الإلكتروني" ,
                         hintText: "أدخل البريد الإلكتروني",
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
                       ),
                       const SizedBox(height: 18),
                       _buildCustomTextField(
+
                         labelText: "كلمة المرور",
                         hintText: "أدخل كلمة المرور",
                         controller: _passwordController,
@@ -188,9 +250,7 @@ class _AuthScreenState extends State<CreatAcountScreen> {
                       width: 170,
                       height: 42,
                       child: ElevatedButton(
-                        onPressed: () {
-                          // إضافة التوجيه للشاشة التالية هنا عند التنفيذ
-                        },
+                        onPressed: _skipToOnboarding,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: mainButtonColor,
                           shape: RoundedRectangleBorder(
@@ -200,8 +260,8 @@ class _AuthScreenState extends State<CreatAcountScreen> {
                         ),
                         child: Text(
                           "متابعة",
-                          style: TextStyle(
-                            fontSize: 18,
+                          style: GoogleFonts.amiri(
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
                             color: mainButtonTextColor,
                           ),
@@ -219,22 +279,20 @@ class _AuthScreenState extends State<CreatAcountScreen> {
               bottom: 0,
               left: 0,
               child: GestureDetector(
-                onTap: () {
-                  // إضافة التوجيه للشاشة التالية عند الضغط على تخطي
-                },
+                onTap: _skipToOnboarding,
                 child: CustomPaint(
                   size: const Size(140, 140),
                   painter: BottomBubblePainter(color: topBubbleColor),
-                  child: const SizedBox(
+                  child: SizedBox(
                     width: 140,
                     height: 140,
                     child: Align(
                       alignment: Alignment(-0.4, 0.4),
                       child: Text(
                         "تخطي الان",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
+                        style: GoogleFonts.amiri(
+                          color: AppColors.Beige,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -244,6 +302,7 @@ class _AuthScreenState extends State<CreatAcountScreen> {
               ),
             )
           ],
+          ),
         ),
       ),
     );
@@ -266,22 +325,22 @@ class _AuthScreenState extends State<CreatAcountScreen> {
         hintText: hintText,
         alignLabelWithHint: true,
         
-        labelStyle: TextStyle(
+        labelStyle: GoogleFonts.amiri(
           color: Colors.grey.shade600,
-          fontSize: 14,
+          fontSize: 16,
         ),
-        floatingLabelStyle: TextStyle(
+        floatingLabelStyle: GoogleFonts.amiri(
           color: topBubbleColor,
           fontWeight: FontWeight.bold,
-          fontSize: 14,
+          fontSize: 15,
         ),
-        hintStyle: TextStyle(
+        hintStyle: GoogleFonts.amiri(
           color: Colors.grey.shade400,
-          fontSize: 14,
+          fontSize: 15,
         ),
 
         filled: true,
-        fillColor: Colors.white,
+        fillColor: AppColors.white,
         contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
 
         enabledBorder: OutlineInputBorder(
