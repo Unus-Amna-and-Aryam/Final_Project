@@ -241,7 +241,6 @@ class _QuestionScreenState extends State<QuestionScreen> {
                     option: option,
                     isSelected: _selectedIds.contains(option.id),
                     onTap: () => _toggle(option.id),
-                    useWatermarkStyle: question.id == 'event_type',
                   ))
               .toList(),
         );
@@ -257,7 +256,6 @@ class _QuestionScreenState extends State<QuestionScreen> {
                       option: option,
                       isSelected: _selectedIds.contains(option.id),
                       onTap: () => _toggle(option.id),
-                      useWatermarkStyle: question.id == 'event_type',
                     ),
                   ),
                 ),
@@ -276,7 +274,6 @@ class _QuestionScreenState extends State<QuestionScreen> {
                     option: option,
                     isSelected: _selectedIds.contains(option.id),
                     onTap: () => _toggle(option.id),
-                    useWatermarkStyle: question.id == 'event_type',
                   ),
                 ),
               )
@@ -515,28 +512,19 @@ class _OptionCard extends StatelessWidget {
   final QuestionOption option;
   final bool isSelected;
   final VoidCallback onTap;
-  // Only true for question 1 ("اختر مناسبتك مع أُنس") — that question's
-  // redesign (no icons, centered bigger text, logo watermark on selection)
-  // must not leak into question 2, which also uses grid2 and this same
-  // widget. false restores the original icon-based card look exactly.
-  final bool useWatermarkStyle;
 
   const _OptionCard({
     required this.option,
     required this.isSelected,
     required this.onTap,
-    required this.useWatermarkStyle,
   });
 
+  // No icon/iconImagePath ever shown — just centered, larger title (+
+  // subtitle when the question has one), with a faint full-card logo
+  // watermark that only appears once selected. Applies to every card using
+  // this widget (currently questions 1 and 2).
   @override
   Widget build(BuildContext context) {
-    return useWatermarkStyle ? _buildWatermarkStyle() : _buildClassicStyle();
-  }
-
-  // Question 1 only: no icon/iconImagePath ever shown — just centered,
-  // larger title + subtitle, with a faint full-card logo watermark that
-  // only appears once selected.
-  Widget _buildWatermarkStyle() {
     final foreground = Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -594,72 +582,16 @@ class _OptionCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    foreground,
+                    // Positioned.fill (not a bare Stack child) so this gets
+                    // the exact same tight full-card constraints as the
+                    // unselected path below — otherwise it shrink-wraps to
+                    // the text width and Stack's default alignment anchors
+                    // it to the RTL "start" (right) edge instead of center.
+                    Positioned.fill(child: foreground),
                   ],
                 ),
               )
             : foreground,
-      ),
-    );
-  }
-
-  // Every other question using cards (currently just question 2): original
-  // look, unchanged by question 1's redesign — icon/iconImagePath always
-  // shown, left-aligned text, no watermark.
-  Widget _buildClassicStyle() {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.Burgundy : AppColors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: isSelected
-              ? null
-              : Border.all(color: Colors.grey.shade200),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            option.iconImagePath != null
-                ? Image.asset(
-                    option.iconImagePath!,
-                    width: 18,
-                    height: 18,
-                    fit: BoxFit.contain,
-                  )
-                : Icon(
-                    option.icon,
-                    size: 18,
-                    color: isSelected
-                        ? AppColors.Gold
-                        : AppColors.Burgundy_White,
-                  ),
-            const SizedBox(height: 10),
-            Text(
-              option.title,
-              style: GoogleFonts.amiri(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: isSelected ? AppColors.white : AppColors.Burgundy,
-              ),
-            ),
-            if (option.subtitle != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                option.subtitle!,
-                style: GoogleFonts.amiri(
-                  fontSize: 12,
-                  color: isSelected
-                      ? AppColors.white
-                      : AppColors.Burgundy_White,
-                ),
-              ),
-            ],
-          ],
-        ),
       ),
     );
   }
