@@ -2,27 +2,88 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:final_project/constants/app_colors.dart';
 import 'package:final_project/models/questions_model.dart';
-import 'package:final_project/screens/therd_screen.dart';
+import 'package:final_project/screens/recommended_plan_screen.dart';
 
 /// Pushes the onboarding question flow starting at the first question in
 /// [onboardingQuestions]. Each question advances to the next on "التالي";
-/// after the last one, it hands off to [TherdScreen].
+/// after the last one, it hands off to [RecommendedPlanScreen].
 void startOnboardingFlow(BuildContext context) {
   _pushQuestion(context, 0);
 }
 
-void _pushQuestion(BuildContext context, int index) {
+// There's no state-management library (Provider/Riverpod/Bloc/etc.) or
+// shared/persisted answer store anywhere in this flow — every QuestionScreen
+// only knows its own selections, and they're discarded once "التالي" moves
+// to the next screen. So earlier answers that later questions need are
+// threaded through this same recursive push chain as plain parameters, just
+// like [index] already is, rather than introducing a state-management
+// pattern for a couple of values.
+void _pushQuestion(
+  BuildContext context,
+  int index, {
+  String? eventTypeId,
+  String? locationId,
+}) {
+  var question = onboardingQuestions[index];
+
+  // Question 5 ("needs"): two categories are conditional on earlier
+  // answers — "العروس" only for a "زفاف" (wedding) event (question 1), and
+  // "قاعات واستراحات" only when the event is "خارج المنزل" (question 2,
+  // id 'outdoor'), since there's no venue to book for an indoor one. Both
+  // conditions are independent and compose on the same categories list.
+  // Excluded categories are still the same QuestionCategory/
+  // _buildExpandableList used for every other category, so whichever ones
+  // remain automatically match their exact style and the accordion list
+  // (not a grid) just renders however many are left — nothing to
+  // recalculate.
+  if (question.id == 'needs') {
+    final excludedCategoryIds = <String>{
+      if (eventTypeId != 'wedding') 'bride',
+      if (locationId == 'indoor') 'venues',
+    };
+    if (excludedCategoryIds.isNotEmpty) {
+      question = QuestionModel(
+        id: question.id,
+        step: question.step,
+        totalSteps: question.totalSteps,
+        title: question.title,
+        options: question.options,
+        allowMultiSelect: question.allowMultiSelect,
+        layout: question.layout,
+        sliderSteps: question.sliderSteps,
+        sliderUnitLabel: question.sliderUnitLabel,
+        sliderQuickPicks: question.sliderQuickPicks,
+        categories: question.categories
+            ?.where((category) => !excludedCategoryIds.contains(category.id))
+            .toList(),
+      );
+    }
+  }
+
   Navigator.of(context).push(
     MaterialPageRoute(
       builder: (context) => QuestionScreen(
-        question: onboardingQuestions[index],
+        question: question,
         onNext: (selectedIds) {
           final nextIndex = index + 1;
+          // Each of these only updates from its own question; every other
+          // question just passes the existing value through unchanged.
+          final nextEventTypeId = question.id == 'event_type'
+              ? (selectedIds.isNotEmpty ? selectedIds.first : eventTypeId)
+              : eventTypeId;
+          final nextLocationId = question.id == 'location'
+              ? (selectedIds.isNotEmpty ? selectedIds.first : locationId)
+              : locationId;
           if (nextIndex < onboardingQuestions.length) {
-            _pushQuestion(context, nextIndex);
+            _pushQuestion(
+              context,
+              nextIndex,
+              eventTypeId: nextEventTypeId,
+              locationId: nextLocationId,
+            );
           } else {
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const TherdScreen()),
+              MaterialPageRoute(builder: (context) => const RecommendedPlanScreen()),
             );
           }
         },
@@ -340,41 +401,45 @@ class _QuestionScreenState extends State<QuestionScreen> {
                     ),
                   ),
                 ),
-                if (isExpanded)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: category.items.map((item) {
-                        final isSelected = _selectedIds.contains(item.id);
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 10),
-                          child: GestureDetector(
-                            onTap: () => _toggle(item.id),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  isSelected
-                                      ? Icons.check_box
-                                      : Icons.check_box_outline_blank,
-                                  size: 22,
-                                  color: isSelected
-                                      ? AppColors.Gold
-                                      : Colors.grey.shade300,
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  item.title,
-                                  style: GoogleFonts.amiri(
-                                    fontSize: 18,
-                                    color: AppColors.Burgundy,
+               if (isExpanded)
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: 160),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
+                      child: ListView(
+                        shrinkWrap: true,
+                        // mainAxisSize: MainAxisSize.min,
+                        children: category.items.map((item) {
+                          final isSelected = _selectedIds.contains(item.id);
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 10),
+                            child: GestureDetector(
+                              onTap: () => _toggle(item.id),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    isSelected
+                                        ? Icons.check_box
+                                        : Icons.check_box_outline_blank,
+                                    size: 22,
+                                    color: isSelected
+                                        ? AppColors.Gold
+                                        : Colors.grey.shade300,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    item.title,
+                                    style: GoogleFonts.amiri(
+                                      fontSize: 18,
+                                      color: AppColors.Burgundy,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        );
-                      }).toList(),
+                          );
+                        }).toList(),
+                      ),
                     ),
                   ),
               ],
