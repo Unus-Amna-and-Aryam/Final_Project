@@ -1,16 +1,40 @@
 import 'package:final_project/screens/hello_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:fvp/fvp.dart' as fvp;
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:final_project/service/providers_database_service.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
-  // video_player has no native Windows/Linux/macOS implementation, so fvp
-  // fills that gap there. On Android/iOS the official implementation
-  // already works (and renders more reliably), so we scope fvp to desktop
-  // only instead of letting it take over every platform.
-  fvp.registerWith(options: {
-    'platforms': ['windows', 'linux', 'macos'],
-  });
+Future<void> main() async {
+  fvp.registerWith(
+    options: {
+      'platforms': ['windows', 'linux', 'macos'],
+    },
+  );
+
+  WidgetsFlutterBinding.ensureInitialized();
+
+    await dotenv.load();
+  await Supabase.initialize(
+    url: dotenv.get('our_url_key'),
+    publishableKey: dotenv.get('our_publishableKey'),
+  );
+
+
+   await testConnection(); 
+  // ← تنادي عليها هنا، تحت الـ initialize مباشرة
   runApp(const MainApp());
+}
+
+Future<void> testConnection() async {
+  try {
+    final service = ProvidersDatabaseService();
+    final result = await service.getAllProviders();
+    print('✅ عدد النتائج: ${result.length}');
+  } catch (e, stackTrace) {
+    print('❌ خطأ في الاتصال بقاعدة البيانات: $e');
+    print('Stack trace: $stackTrace');
+  }
 }
 
 class MainApp extends StatelessWidget {
@@ -24,3 +48,7 @@ class MainApp extends StatelessWidget {
     );
   }
 }
+
+// مو هنا بالمين
+// بعدين في أي مكان بالكود تقدر توصل للعميل عن طريق:
+//final supabase = Supabase.instance.client;

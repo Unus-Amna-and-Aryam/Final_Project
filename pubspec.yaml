@@ -9,6 +9,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_dotenv: ^6.0.1
   fvp: ^0.38.1
   google_fonts: ^8.2.1
   supabase_flutter: ^2.17.2
@@ -24,3 +25,4 @@ flutter:
   assets:
     - assets/logo/
     - assets/images/
+    - .env
