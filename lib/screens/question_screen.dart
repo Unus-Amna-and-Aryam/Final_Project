@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:final_project/constants/app_colors.dart';
+import 'package:final_project/models/onboarding_answers.dart';
 import 'package:final_project/models/questions_model.dart';
 import 'package:final_project/screens/recommended_plan_screen.dart';
 
 /// Pushes the onboarding question flow starting at the first question in
 /// [onboardingQuestions]. Each question advances to the next on "التالي";
-/// after the last one, it hands off to [RecommendedPlanScreen].
+/// after the last one, it hands off to [RecommendedPlanScreen] with the
+/// collected [OnboardingAnswers].
 void startOnboardingFlow(BuildContext context) {
-  _pushQuestion(context, 0);
+  _pushQuestion(context, 0, answers: const OnboardingAnswers());
 }
 
 // There's no state-management library (Provider/Riverpod/Bloc/etc.) or
@@ -23,6 +25,7 @@ void _pushQuestion(
   int index, {
   String? eventTypeId,
   String? locationId,
+  required OnboardingAnswers answers,
 }) {
   var question = onboardingQuestions[index];
 
@@ -74,16 +77,30 @@ void _pushQuestion(
           final nextLocationId = question.id == 'location'
               ? (selectedIds.isNotEmpty ? selectedIds.first : locationId)
               : locationId;
+          final nextAnswers = OnboardingAnswers(
+            guestCount: question.id == 'guests_count' && selectedIds.isNotEmpty
+                ? int.parse(selectedIds.first)
+                : answers.guestCount,
+            budget: question.id == 'budget' && selectedIds.isNotEmpty
+                ? double.parse(selectedIds.first)
+                : answers.budget,
+            selectedNeedsIds:
+                question.id == 'needs' ? selectedIds : answers.selectedNeedsIds,
+          );
           if (nextIndex < onboardingQuestions.length) {
             _pushQuestion(
               context,
               nextIndex,
               eventTypeId: nextEventTypeId,
               locationId: nextLocationId,
+              answers: nextAnswers,
             );
           } else {
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const RecommendedPlanScreen()),
+              MaterialPageRoute(
+                builder: (context) =>
+                    RecommendedPlanScreen(answers: nextAnswers),
+              ),
             );
           }
         },
@@ -407,7 +424,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
                       child: ListView(
-                        shrinkWrap: true,
+                         shrinkWrap: true,
                         // mainAxisSize: MainAxisSize.min,
                         children: category.items.map((item) {
                           final isSelected = _selectedIds.contains(item.id);
