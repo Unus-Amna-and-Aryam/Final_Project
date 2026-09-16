@@ -90,9 +90,10 @@ class _AuthScreenState extends State<CreatAcountScreen> {
 
       if (!mounted) return;
       startOnboardingFlow(context);
-
-    } on AuthException catch (e) {
-      _showSnackBar(e.message);
+} on AuthException catch (e) {
+      // استبدال رسائل الأخطاء الإنجليزية برسائل عربية واضحة
+      String arabicMessage = _translateAuthError(e.message);
+      _showSnackBar(arabicMessage);
     } catch (e) {
       _showSnackBar('حدث خطأ غير متوقع: $e');
     }
@@ -106,6 +107,22 @@ class _AuthScreenState extends State<CreatAcountScreen> {
         backgroundColor: AppColors.Burgundy,
       ),
     );
+  }
+  // دالة لترجمة أخطاء Supabase الشهيرة إلى العربية
+  String _translateAuthError(String englishMessage) {
+    if (englishMessage.contains('Invalid login credentials')) {
+      return 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+    } else if (englishMessage.contains('Password should be at least')) {
+      return 'كلمة المرور يجب أن تكون 6 أحرف أو أرقام على الأقل';
+    } else if (englishMessage.contains('User already registered')) {
+      return 'هذا البريد الإلكتروني مسجل مسبقاً، حاول تسجيل الدخول';
+    } else if (englishMessage.contains('Email not confirmed')) {
+      return 'يرجى تأكيد البريد الإلكتروني أولاً';
+    } else if (englishMessage.contains('Invalid email')) {
+      return 'البريد الإلكتروني غير صالح';
+    }
+    // إذا كان خطأ آخر لم نكتبه، نرجع رسالة عامة أو الرسالة نفسها
+    return 'حدث خطأ أثناء المصادقة، يجدر المحاولة مرة أخرى';
   }
   @override
   Widget build(BuildContext context) {

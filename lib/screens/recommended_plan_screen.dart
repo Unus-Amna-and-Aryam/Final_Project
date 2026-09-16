@@ -8,6 +8,7 @@ import 'package:final_project/models/providers_model.dart';
 import 'package:final_project/screens/favorites_screen.dart';
 import 'package:final_project/screens/profile_screen.dart';
 import 'package:final_project/screens/provider_detail_screen.dart';
+import 'package:final_project/service/favorites_database_service.dart';
 import 'package:final_project/service/providers_database_service.dart';
 import 'package:final_project/widgets/app_bottom_nav_bar.dart';
 
@@ -468,26 +469,45 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
           return _servicesFallback('لا توجد توصيات متاحة حاليًا');
         }
 
+        // Tracks exactly what's currently shown in each card (post any
+        // "البديل" swaps), for [_buildFavoriteButton] to save as the plan's
+        // provider list — not what's recomputed here, which stays at index
+        // 0 for every card. Only (re)seeded when the set of cards actually
+        // changes (in practice: once, when real provider data first
+        // arrives) so a swap made before this rebuilds isn't lost.
+        if (_displayedPlanProviders == null ||
+            _displayedPlanProviders!.length != recommendations.length) {
+          _displayedPlanProviders = [
+            for (final recommendation in recommendations)
+              recommendation.candidates.first,
+          ];
+        }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildServicesHeader(recommendations.length),
             const SizedBox(height: 12),
-            for (final recommendation in recommendations)
+            for (var i = 0; i < recommendations.length; i++)
               _ServiceCard(
-                candidates: recommendation.candidates,
+                candidates: recommendations[i].candidates,
                 onOpenDetail: (provider) => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) =>
                         ProviderDetailScreen(provider: provider),
                   ),
                 ),
+                onDisplayedProviderChanged: (provider) =>
+                    _displayedPlanProviders![i] = provider,
               ),
           ],
         );
       },
     );
   }
+
+  // See _buildServicesSection's assignment for what this holds and why.
+  List<Providers>? _displayedPlanProviders;
 
   /// One card's worth of recommendation: every provider matching a single
   /// selected needs-category (see [_needIdToCategoryGroup]), in the order
@@ -580,20 +600,49 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
     );
   }
 
+  Future<void> _saveFavoritePlan(BuildContext context) async {
+    final providers = _displayedPlanProviders;
+    if (providers == null || providers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'يرجى الانتظار حتى تحميل التوصيات أولاً',
+            style: GoogleFonts.amiri(),
+          ),
+          backgroundColor: AppColors.Burgundy,
+        ),
+      );
+      return;
+    }
+
+    String message;
+    try {
+      await FavoritesDatabaseService().saveFavoritePlan(
+        eventType: widget.answers.eventType,
+        guestCount: widget.answers.guestCount,
+        budget: widget.answers.budget,
+        providers: providers,
+      );
+      message = 'تمت الإضافة للمفضلة';
+    } on NotSignedInException {
+      message = 'سجّل الدخول لحفظ الخطة بالمفضلة';
+    } catch (_) {
+      message = 'تعذّر حفظ الخطة الآن، حاول لاحقًا';
+    }
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.amiri()),
+        backgroundColor: AppColors.Burgundy,
+      ),
+    );
+  }
+
   Widget _buildFavoriteButton(BuildContext context) {
     return Center(
       child: GestureDetector(
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'تمت الإضافة للمفضلة',
-                style: GoogleFonts.amiri(),
-              ),
-              backgroundColor: AppColors.Burgundy,
-            ),
-          );
-        },
+        onTap: () => _saveFavoritePlan(context),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
@@ -738,8 +787,16 @@ class _StatChip extends StatelessWidget {
 class _ServiceCard extends StatefulWidget {
   final List<Providers> candidates;
   final void Function(Providers provider) onOpenDetail;
+  // Fired whenever "البديل" changes which candidate is shown, so the
+  // parent can track it for the full-plan favorite save — see
+  // _buildServicesSection's _displayedPlanProviders.
+  final void Function(Providers provider) onDisplayedProviderChanged;
 
-  const _ServiceCard({required this.candidates, required this.onOpenDetail});
+  const _ServiceCard({
+    required this.candidates,
+    required this.onOpenDetail,
+    required this.onDisplayedProviderChanged,
+  });
 
   @override
   State<_ServiceCard> createState() => _ServiceCardState();
@@ -766,12 +823,24 @@ class _ServiceCardState extends State<_ServiceCard> {
 
   void _showNextAlternative() {
     setState(() => _index = (_index + 1) % widget.candidates.length);
+    widget.onDisplayedProviderChanged(_provider);
   }
 
-  void _addToFavorites() {
+  Future<void> _addToFavorites() async {
+    String message;
+    try {
+      await FavoritesDatabaseService().saveFavoriteProvider(_provider);
+      message = 'تمت الإضافة للمفضلة';
+    } on NotSignedInException {
+      message = 'سجّل الدخول لحفظ المفضلة';
+    } catch (_) {
+      message = 'تعذّر الحفظ الآن، حاول لاحقًا';
+    }
+
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('تمت الإضافة للمفضلة', style: GoogleFonts.amiri()),
+        content: Text(message, style: GoogleFonts.amiri()),
         backgroundColor: AppColors.Burgundy,
       ),
     );

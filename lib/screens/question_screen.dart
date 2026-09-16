@@ -77,7 +77,15 @@ void _pushQuestion(
           final nextLocationId = question.id == 'location'
               ? (selectedIds.isNotEmpty ? selectedIds.first : locationId)
               : locationId;
+          // The option's Arabic title (not its id) — see
+          // OnboardingAnswers.eventType.
+          final nextEventType = question.id == 'event_type' && selectedIds.isNotEmpty
+              ? question.options
+                  .firstWhere((option) => option.id == selectedIds.first)
+                  .title
+              : answers.eventType;
           final nextAnswers = OnboardingAnswers(
+            eventType: nextEventType,
             guestCount: question.id == 'guests_count' && selectedIds.isNotEmpty
                 ? int.parse(selectedIds.first)
                 : answers.guestCount,
