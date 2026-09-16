@@ -2,6 +2,7 @@ import 'package:final_project/constants/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:final_project/screens/question_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CreatAcountScreen extends StatefulWidget {
   const CreatAcountScreen({super.key});
@@ -54,7 +55,58 @@ class _AuthScreenState extends State<CreatAcountScreen> {
   void _skipToOnboarding() {
     startOnboardingFlow(context);
   }
+// 1. ضعي الدالة هنا 👇 داخل الـ State
+  Future<void> _handleAuthAction() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
 
+    if (email.isEmpty || password.isEmpty) {
+      _showSnackBar('الرجاء إدخال البريد الإلكتروني وكلمة المرور');
+      return;
+    }
+
+    if (isSignUp == 1 && password != confirmPassword) {
+      _showSnackBar('كلمة المرور غير متطابقة مع تأكيد كلمة المرور');
+      return;
+    }
+
+    try {
+      final supabase = Supabase.instance.client;
+
+      if (isSignUp == 1) {
+        await supabase.auth.signUp(
+          email: email,
+          password: password,
+        );
+        _showSnackBar('تم إنشاء الحساب بنجاح!');
+      } else {
+        await supabase.auth.signInWithPassword(
+          email: email,
+          password: password,
+        );
+        _showSnackBar('تم تسجيل الدخول بنجاح!');
+      }
+
+      if (!mounted) return;
+      startOnboardingFlow(context);
+
+    } on AuthException catch (e) {
+      _showSnackBar(e.message);
+    } catch (e) {
+      _showSnackBar('حدث خطأ غير متوقع: $e');
+    }
+  }
+
+  // 2. وضعي دالة الـ SnackBar بجانبها هنا 👇
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.amiri(fontSize: 16)),
+        backgroundColor: AppColors.Burgundy,
+      ),
+    );
+  }
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -250,7 +302,7 @@ class _AuthScreenState extends State<CreatAcountScreen> {
                       width: 170,
                       height: 42,
                       child: ElevatedButton(
-                        onPressed: _skipToOnboarding,
+                        onPressed:_handleAuthAction,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: mainButtonColor,
                           shape: RoundedRectangleBorder(

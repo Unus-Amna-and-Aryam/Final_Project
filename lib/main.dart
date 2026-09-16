@@ -48,7 +48,3 @@ class MainApp extends StatelessWidget {
     );
   }
 }
-
-// مو هنا بالمين
-// بعدين في أي مكان بالكود تقدر توصل للعميل عن طريق:
-//final supabase = Supabase.instance.client;
