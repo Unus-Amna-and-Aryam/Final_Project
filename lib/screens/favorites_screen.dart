@@ -36,11 +36,15 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   void _handleNavTap(BottomNavItem item) {
     if (item == BottomNavItem.favorites) return; // already here
-    // No onboarding answers are available from this tab, so the home screen
-    // is reached with placeholder defaults here — same as before this
-    // screen required real answers.
+    // The real onboarding answers aren't available from this tab directly,
+    // but RecommendedPlanScreen stashes them in OnboardingSession every
+    // time it's built — reuse those instead of losing them to empty
+    // defaults. Falls back to placeholder defaults only if the home tab
+    // was somehow never reached yet this app run.
     final screen = item == BottomNavItem.home
-        ? const RecommendedPlanScreen(answers: OnboardingAnswers())
+        ? RecommendedPlanScreen(
+            answers: OnboardingSession.current ?? const OnboardingAnswers(),
+          )
         : const ProfileScreen();
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => screen),

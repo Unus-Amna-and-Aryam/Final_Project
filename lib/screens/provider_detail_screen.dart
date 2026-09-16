@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:final_project/constants/app_colors.dart';
 import 'package:final_project/models/providers_model.dart';
 
 /// Full details for one service provider, as stored in the `providers`
 /// table (see [ProvidersDatabaseService]). Reached by tapping a service
 /// card on the recommended-plan screen. Only shows the fields that are
-/// actually present on the record.
+/// actually present on the record. "الحساب الاجتماعي" and "الموقع" are
+/// stored as full URLs (checked directly against the live `providers`
+/// table — e.g. a tiktok.com link and a maps.app.goo.gl link
+/// respectively), so those two rows open in the browser/maps app when
+/// tapped; every other row is plain, non-interactive text.
 class ProviderDetailScreen extends StatelessWidget {
   final Providers provider;
 
@@ -14,19 +19,19 @@ class ProviderDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rows = <MapEntry<String, String>>[
+    final rows = <_DetailRowData>[
       if (provider.category != null && provider.category!.isNotEmpty)
-        MapEntry('الفئة', provider.category!),
+        _DetailRowData('الفئة', provider.category!),
       if (provider.subCategory != null && provider.subCategory!.isNotEmpty)
-        MapEntry('الفئة الفرعية', provider.subCategory!),
+        _DetailRowData('الفئة الفرعية', provider.subCategory!),
       if (provider.minPrice != null || provider.maxPrice != null)
-        MapEntry('السعر', _priceRangeText(provider)),
+        _DetailRowData('السعر', _priceRangeText(provider)),
       if (provider.phoneNumber != null && provider.phoneNumber!.isNotEmpty)
-        MapEntry('رقم الجوال', provider.phoneNumber!),
+        _DetailRowData('رقم الجوال', provider.phoneNumber!),
       if (provider.socialAccount != null && provider.socialAccount!.isNotEmpty)
-        MapEntry('الحساب الاجتماعي', provider.socialAccount!),
+        _DetailRowData('الحساب الاجتماعي', provider.socialAccount!, isLink: true),
       if (provider.locationLink != null && provider.locationLink!.isNotEmpty)
-        MapEntry('الموقع', provider.locationLink!),
+        _DetailRowData('الموقع', provider.locationLink!, isLink: true),
     ];
 
     return Directionality(
@@ -55,10 +60,7 @@ class ProviderDetailScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(20),
                 itemCount: rows.length,
                 separatorBuilder: (context, index) => const SizedBox(height: 12),
-                itemBuilder: (context, index) => _DetailRow(
-                  label: rows[index].key,
-                  value: rows[index].value,
-                ),
+                itemBuilder: (context, index) => _DetailRow(data: rows[index]),
               ),
       ),
     );
@@ -74,15 +76,36 @@ class ProviderDetailScreen extends StatelessWidget {
   }
 }
 
-class _DetailRow extends StatelessWidget {
+class _DetailRowData {
   final String label;
   final String value;
+  final bool isLink;
 
-  const _DetailRow({required this.label, required this.value});
+  const _DetailRowData(this.label, this.value, {this.isLink = false});
+}
+
+class _DetailRow extends StatelessWidget {
+  final _DetailRowData data;
+
+  const _DetailRow({required this.data});
+
+  Future<void> _openLink(BuildContext context) async {
+    final uri = Uri.tryParse(data.value);
+    final opened = uri != null &&
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تعذّر فتح الرابط', style: GoogleFonts.amiri()),
+          backgroundColor: AppColors.Burgundy,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final content = Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -95,26 +118,52 @@ class _DetailRow extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: GoogleFonts.amiri(
-              color: Colors.grey.shade600,
-              fontSize: 12,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  data.label,
+                  style: GoogleFonts.amiri(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  data.value,
+                  maxLines: data.isLink ? 1 : null,
+                  overflow: data.isLink ? TextOverflow.ellipsis : null,
+                  style: GoogleFonts.amiri(
+                    color: data.isLink ? AppColors.Gold : AppColors.Burgundy,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    decoration:
+                        data.isLink ? TextDecoration.underline : null,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: GoogleFonts.amiri(
-              color: AppColors.Burgundy,
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          if (data.isLink) ...[
+            const SizedBox(width: 8),
+            Icon(Icons.open_in_new, size: 18, color: AppColors.Burgundy),
+          ],
         ],
+      ),
+    );
+
+    if (!data.isLink) return content;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openLink(context),
+        borderRadius: BorderRadius.circular(14),
+        child: content,
       ),
     );
   }

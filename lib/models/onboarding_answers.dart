@@ -24,3 +24,25 @@ class OnboardingAnswers {
     this.selectedNeedsIds = const [],
   });
 }
+
+/// Holds the most recently seen real [OnboardingAnswers] app-wide, so the
+/// home tab can be rebuilt with the same answers it already had instead of
+/// falling back to empty `OnboardingAnswers()` defaults.
+///
+/// There's no state-management library in this project (see the note in
+/// question_screen.dart's startOnboardingFlow), and AppBottomNavBar's 3
+/// tabs (RecommendedPlanScreen/FavoritesScreen/ProfileScreen) are separate
+/// top-level routes swapped in with `Navigator.pushReplacement` — neither
+/// FavoritesScreen nor ProfileScreen is ever given real onboarding answers
+/// directly, so without this, switching away from the home tab and back
+/// destroyed RecommendedPlanScreen (along with the answers passed to its
+/// constructor) and rebuilt it from scratch with placeholder defaults,
+/// losing every selected need and recommendation.
+///
+/// [current] is set from RecommendedPlanScreen's initState every time it's
+/// built (including right after onboarding finishes), and read by
+/// FavoritesScreen/ProfileScreen's bottom-nav handler when it needs to
+/// rebuild the home tab.
+class OnboardingSession {
+  static OnboardingAnswers? current;
+}
