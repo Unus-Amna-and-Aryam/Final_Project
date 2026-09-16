@@ -242,7 +242,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
                             decoration: BoxDecoration(
                               color: isActive
                                   ? AppColors.Gold
-                                  : AppColors.Burgundy.withOpacity(0.15),
+                                  : AppColors.Burgundy.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
@@ -280,8 +280,8 @@ class _QuestionScreenState extends State<QuestionScreen> {
                         : () => widget.onNext(_selectedIds.toList()),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.Burgundy,
-                      disabledBackgroundColor: AppColors.Burgundy.withOpacity(
-                        0.4,
+                      disabledBackgroundColor: AppColors.Burgundy.withValues(
+                        alpha: 0.4,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
@@ -516,7 +516,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
                   activeTrackColor: AppColors.Gold,
                   inactiveTrackColor: Colors.grey.shade300,
                   thumbColor: AppColors.Gold,
-                  overlayColor: AppColors.Gold.withOpacity(0.2),
+                  overlayColor: AppColors.Gold.withValues(alpha: 0.2),
                   trackHeight: 4,
                 ),
                 child: Slider(

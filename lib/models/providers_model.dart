@@ -33,16 +33,16 @@ class Providers {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['id'] = this.id;
-    data['name'] = this.name;
-    data['category'] = this.category;
-    data['sub_category'] = this.subCategory;
-    data['phone_number'] = this.phoneNumber;
-    data['social_account'] = this.socialAccount;
-    data['location_link'] = this.locationLink;
-    data['min_price'] = this.minPrice;
-    data['max_price'] = this.maxPrice;
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['id'] = id;
+    data['name'] = name;
+    data['category'] = category;
+    data['sub_category'] = subCategory;
+    data['phone_number'] = phoneNumber;
+    data['social_account'] = socialAccount;
+    data['location_link'] = locationLink;
+    data['min_price'] = minPrice;
+    data['max_price'] = maxPrice;
     return data;
   }
 }

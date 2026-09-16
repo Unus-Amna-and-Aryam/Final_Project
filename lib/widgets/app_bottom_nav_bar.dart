@@ -69,7 +69,7 @@ class AppBottomNavBar extends StatelessWidget {
                   color: AppColors.Burgundy,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: Colors.black.withValues(alpha: 0.08),
                       blurRadius: 10,
                       offset: const Offset(0, -2),
                     ),
@@ -163,7 +163,7 @@ class _NavItem extends StatelessWidget {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
+                            color: Colors.black.withValues(alpha: 0.3),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -207,7 +207,7 @@ class _NavItem extends StatelessWidget {
                   child: Icon(
                     icon,
                     size: 24,
-                    color: AppColors.Beige.withOpacity(0.6),
+                    color: AppColors.Beige.withValues(alpha: 0.6),
                   ),
                 ),
             ],

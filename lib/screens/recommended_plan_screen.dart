@@ -333,7 +333,7 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: AppColors.Gold.withOpacity(0.6)),
+          border: Border.all(color: AppColors.Gold.withValues(alpha: 0.6)),
         ),
         child: Text(
           'عبارة تلخص خطتك',
@@ -365,7 +365,7 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
+            color: Colors.black.withValues(alpha: 0.12),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),
@@ -399,7 +399,7 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
               value: _spentRatio,
               minHeight: 8,
               color: AppColors.Gold,
-              backgroundColor: AppColors.Beige.withOpacity(0.22),
+              backgroundColor: AppColors.Beige.withValues(alpha: 0.22),
             ),
           ),
           const SizedBox(height: 18),
@@ -424,7 +424,7 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
           // [_needsExceedBudget].
           if (_planMismatchMessages.isNotEmpty) ...[
             const SizedBox(height: 16),
-            Divider(color: AppColors.Beige.withOpacity(0.2), height: 1),
+            Divider(color: AppColors.Beige.withValues(alpha: 0.2), height: 1),
             const SizedBox(height: 14),
             for (var i = 0; i < _planMismatchMessages.length; i++) ...[
               if (i > 0) const SizedBox(height: 10),
@@ -735,7 +735,7 @@ class _CircleIconButton extends StatelessWidget {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -762,7 +762,7 @@ class _StatChip extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.amiri(
-            color: AppColors.Beige.withOpacity(0.75),
+            color: AppColors.Beige.withValues(alpha: 0.75),
             fontSize: 12,
           ),
         ),
@@ -861,7 +861,7 @@ class _ServiceCardState extends State<_ServiceCard> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.06),
+                color: Colors.black.withValues(alpha: 0.06),
                 blurRadius: 8,
                 offset: const Offset(0, 3),
               ),

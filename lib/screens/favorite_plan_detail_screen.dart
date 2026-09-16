@@ -67,7 +67,7 @@ class FavoritePlanDetailScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
+            color: Colors.black.withValues(alpha: 0.12),
             blurRadius: 14,
             offset: const Offset(0, 6),
           ),
@@ -107,7 +107,7 @@ class _SummaryStat extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.amiri(
-            color: AppColors.Beige.withOpacity(0.75),
+            color: AppColors.Beige.withValues(alpha: 0.75),
             fontSize: 12,
           ),
         ),
@@ -161,7 +161,7 @@ class _PlanProviderCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
