@@ -20,8 +20,8 @@ class _HelloScreenState extends State<HelloScreen>
   static const double _logoWidthFactor = 0.70;
   static const double _logoHeightFactor = 0.50;
 
-  // The "أُنُس" text image, same size as before, now placed above the logo.
-  static const double _textWidthFactor = 0.46;
+  // The "أُنُس" text image, placed above the logo.
+  static const double _textWidthFactor = 0.58;
   static const double _textAspectRatio = 890 / 838; // unus.png width / height
 
   // The source video has a black border baked into the frame around the

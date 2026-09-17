@@ -19,11 +19,18 @@ import 'package:final_project/widgets/app_bottom_nav_bar.dart';
 /// provider in [category] matches regardless of its sub-category.
 ///
 /// Values here are the actual strings stored in the database (checked
-/// directly against the `providers` table), not the question's own
-/// wording — a few differ: several drop the hamza the question text uses
-/// ("او" vs "أو", "ارقام" vs "أرقام"), and "hospitality_sweets" ("أصناف
-/// الحلا") is stored under sub_category "الحالي", which reads like a
-/// data-entry typo for "الحلا" but is what's actually there.
+/// directly against the `providers` table via its live data, not the
+/// question's own wording — several differ, and getting any of them wrong
+/// means that need silently produces no recommendation card at all (no
+/// error, it just never matches a provider):
+/// - several drop the hamza the question text uses ("او" vs "أو", "ارقام"
+///   vs "أرقام")
+/// - "decor_stands" ("ستاندات أو مجسمات") is stored under sub_category
+///   "ستاندات" only
+/// - "hospitality_cake" ("كيكات") is stored under sub_category "الكيك"
+/// - "hospitality_sweets" ("أصناف الحلا") is stored under sub_category
+///   "الحالي", which reads like a data-entry typo for "الحلا" but is what's
+///   actually there
 class _NeedProviderMatch {
   final String category;
   final String? subCategory;
@@ -35,11 +42,11 @@ const Map<String, _NeedProviderMatch> _needIdToProviderMatch = {
   'venues_combined': _NeedProviderMatch('قاعات واستراحات'),
   'catering_kitchens': _NeedProviderMatch('مأكولات', 'مطابخ'),
   'catering_buffet': _NeedProviderMatch('مأكولات', 'بوفيه'),
-  'decor_stands': _NeedProviderMatch('الديكور والتنسيق', 'ستاندات او مجسمات'),
+  'decor_stands': _NeedProviderMatch('الديكور والتنسيق', 'ستاندات'),
   'decor_furniture': _NeedProviderMatch('الديكور والتنسيق', 'طاولات ومقاعد'),
   'decor_numbers': _NeedProviderMatch('الديكور والتنسيق', 'ارقام للتنسيق الخاص'),
   'decor_flowers': _NeedProviderMatch('الديكور والتنسيق', 'زهور'),
-  'hospitality_cake': _NeedProviderMatch('الضيافة', 'كيكات'),
+  'hospitality_cake': _NeedProviderMatch('الضيافة', 'الكيك'),
   'hospitality_sweets': _NeedProviderMatch('الضيافة', 'الحالي'),
   'hospitality_savory': _NeedProviderMatch('الضيافة', 'المالح'),
   'hospitality_favors': _NeedProviderMatch('الضيافة', 'توزيعات'),
@@ -85,17 +92,39 @@ const Map<String, double> _needCategoryDefaultShares = {
   'bride': 0.10,
 };
 
-/// All providers matching one selected needs-category (see
-/// [_needIdToCategoryGroup]), backing a single recommendation card —
+// Flat, realistic percentages of the *total* budget for specific needs,
+// used as that need's fallback price directly — unlike
+// [_needCategoryDefaultShares] above (which is normalized against every
+// selected category, then split across however many cards share one
+// category), these are used exactly as given, regardless of what else is
+// selected. Catering and bridal salons are commonly a bigger real expense
+// than their old category-average share reflected, and cakes specifically
+// a smaller one, so they're called out here individually rather than only
+// at the "catering"/"bride"/"hospitality" category level.
+const Map<String, double> _needShareOverride = {
+  'catering_kitchens': 0.25,
+  'catering_buffet': 0.25,
+  'bride_salons': 0.15,
+  'hospitality_cake': 0.05,
+  'hospitality_sweets': 0.10,
+  'hospitality_savory': 0.10,
+  'hospitality_favors': 0.10,
+};
+
+/// All providers matching one single selected need (see
+/// [_needIdToProviderMatch]), backing a single recommendation card —
 /// [candidates] is never empty; the card shows [candidates].first and lets
-/// "البديل" cycle through the rest. [group] is the needs-category id (a key
-/// of [_needCategoryDefaultShares]) this card was built for, used to work
+/// "البديل" cycle through the rest. Every selected need gets its own card
+/// (not just its own category), so e.g. picking both "مطابخ" and "بوفيه"
+/// shows two catering cards, not one. [group] is the needs-category id (a
+/// key of [_needCategoryDefaultShares]) this need belongs to, used to work
 /// out that card's fallback price when its displayed candidate has none.
 class _CategoryRecommendation {
+  final String needId;
   final String group;
   final List<Providers> candidates;
 
-  const _CategoryRecommendation(this.group, this.candidates);
+  const _CategoryRecommendation(this.needId, this.group, this.candidates);
 }
 
 /// The recommended-plan / home screen shown after onboarding: a budget
@@ -132,48 +161,15 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
   int get _guestCount => widget.answers.guestCount;
 
   // _spent can legitimately exceed _budget (e.g. real provider prices for
-  // the selected needs cost more than planned) — that's exactly what
-  // [_needsExceedBudget] warns about, and "المتبقي" is left unclamped so
-  // it can go negative and show the real overrun. But a progress bar can
-  // only ever paint a fraction between 0 and 1 — Flutter widgets that take
-  // a 0-1 value don't tolerate an out-of-range one — so the ratio actually
-  // handed to the widget is clamped separately here. Also guards against
-  // dividing by a zero budget (e.g. this screen's placeholder
-  // OnboardingAnswers()), which would otherwise produce NaN.
+  // the selected needs cost more than planned), and "المتبقي" is left
+  // unclamped so it can go negative and show the real overrun. But a
+  // progress bar can only ever paint a fraction between 0 and 1 — Flutter
+  // widgets that take a 0-1 value don't tolerate an out-of-range one — so
+  // the ratio actually handed to the widget is clamped separately here.
+  // Also guards against dividing by a zero budget (e.g. this screen's
+  // placeholder OnboardingAnswers()), which would otherwise produce NaN.
   double get _spentRatio =>
       _budget > 0 ? (_spent / _budget).clamp(0.0, 1.0) : 0.0;
-
-  // Rough minimum reasonable cost per guest (in SAR) — used only to flag an
-  // unrealistic budget-to-guest-count ratio below, not as an actual
-  // per-guest price estimate. Adjustable later.
-  static const double _minReasonableCostPerGuest = 150;
-
-  // True when the budget doesn't even cover _minReasonableCostPerGuest per
-  // guest — i.e. too many guests for the budget chosen (or too small a
-  // budget for the guest count chosen).
-  bool get _guestCountMismatch =>
-      (_budget / _guestCount) < _minReasonableCostPerGuest;
-
-  // True when the actual cost shown across the recommendation cards
-  // ([_spent]) overshoots the budget by 20% or more. A plain
-  // "_spent > _budget" would fire on any smaller overrun too, but that's
-  // the same underlying idea with a much more sensitive threshold, so
-  // rather than show two overlapping "your budget is off" messages, only
-  // this more specific, higher-confidence one is surfaced.
-  bool get _needsExceedBudget => _spent > _budget * 1.2;
-
-  // The plan-mismatch messages that currently apply, in display order —
-  // empty when the plan looks fine. Backs the alert block in
-  // [_buildBudgetCard]: one Divider is shown once above all of them, and
-  // each message gets its own icon + text row.
-  //
-  // [_guestCountMismatch] and [_needsExceedBudget] now share one unified
-  // message text, so rather than potentially list the exact same sentence
-  // twice when both are true, it's shown once for either (or both).
-  List<String> get _planMismatchMessages => [
-        if (_guestCountMismatch || _needsExceedBudget)
-          'عدد الضيوف أو الميزانية غير مناسبين',
-      ];
 
   late final Future<List<Providers>> _providersFuture;
 
@@ -201,6 +197,24 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
     );
     if (selectedSharesSum <= 0) return 0;
     return (_needCategoryDefaultShares[group] ?? 0) / selectedSharesSum;
+  }
+
+  // [recommendation]'s fallback price — what its card shows and counts
+  // when its displayed candidate has no real price. [_needShareOverride]
+  // needs use their flat percentage of the budget directly; every other
+  // need falls back to its category's normalized share (see
+  // [_normalizedShareFraction]), split evenly across [cardsPerGroup] many
+  // cards sharing that category.
+  num _fallbackPriceFor(
+    _CategoryRecommendation recommendation,
+    Set<String> selectedGroups,
+    Map<String, int> cardsPerGroup,
+  ) {
+    final override = _needShareOverride[recommendation.needId];
+    if (override != null) return override * _budget;
+    return _normalizedShareFraction(recommendation.group, selectedGroups) *
+        _budget /
+        cardsPerGroup[recommendation.group]!;
   }
 
   void _handleNavTap(BottomNavItem item) {
@@ -304,7 +318,7 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
           border: Border.all(color: AppColors.Gold.withOpacity(0.6)),
         ),
         child: Text(
-          'عبارة تلخص خطتك',
+          'احتياجاتك جاهزة مع أُنس',
           style: GoogleFonts.amiri(
             color: AppColors.Burgundy,
             fontSize: 15,
@@ -331,11 +345,21 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
       decoration: BoxDecoration(
         color: AppColors.Burgundy,
         borderRadius: BorderRadius.circular(24),
+        // Two layered shadows instead of one flat drop shadow, so the card
+        // reads as raised off the page on every edge (not just underneath)
+        // — a soft wide ambient glow all around it, plus a tighter, darker
+        // shadow grounding it below.
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
+            color: Colors.black.withOpacity(0.16),
+            blurRadius: 30,
+            spreadRadius: 2,
+            offset: const Offset(0, 10),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.22),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -387,34 +411,6 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
               ),
             ],
           ),
-          // Collapsed entirely (not just hidden) unless at least one plan
-          // mismatch actually applies — see [_guestCountMismatch] and
-          // [_needsExceedBudget].
-          if (_planMismatchMessages.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Divider(color: AppColors.Beige.withOpacity(0.2), height: 1),
-            const SizedBox(height: 14),
-            for (var i = 0; i < _planMismatchMessages.length; i++) ...[
-              if (i > 0) const SizedBox(height: 10),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(Icons.diamond, size: 14, color: AppColors.Gold),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _planMismatchMessages[i],
-                      style: GoogleFonts.amiri(
-                        color: AppColors.Beige,
-                        fontSize: 13,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
         ],
       ),
     );
@@ -459,6 +455,14 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
 
         final selectedGroups =
             recommendations.map((r) => r.group).toSet();
+        // A group's normalized share is meant for that whole category, but
+        // it can now back multiple cards (one per selected need in it) —
+        // split evenly among just the cards actually sharing it, so e.g.
+        // "الديكور" with 4 selected needs doesn't quadruple-count its 15%.
+        final cardsPerGroup = <String, int>{};
+        for (final r in recommendations) {
+          cardsPerGroup[r.group] = (cardsPerGroup[r.group] ?? 0) + 1;
+        }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -468,11 +472,11 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
             for (var i = 0; i < recommendations.length; i++)
               _ServiceCard(
                 candidates: recommendations[i].candidates,
-                fallbackPrice: _normalizedShareFraction(
-                      recommendations[i].group,
-                      selectedGroups,
-                    ) *
-                    _budget,
+                fallbackPrice: _fallbackPriceFor(
+                  recommendations[i],
+                  selectedGroups,
+                  cardsPerGroup,
+                ),
                 onOpenDetail: (provider) => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) =>
@@ -493,45 +497,35 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
   // See _buildServicesSection's assignment for what this holds and why.
   List<Providers>? _displayedPlanProviders;
 
-  /// One card's worth of recommendation: every provider matching a single
-  /// selected needs-category (see [_needIdToCategoryGroup]), in the order
-  /// found — [candidates].first is shown initially, and "البديل" cycles
-  /// through the rest.
+  /// One card's worth of recommendation per selected need (see
+  /// [OnboardingAnswers.selectedNeedsIds]), in selection order — so every
+  /// need the user picked in question 5 gets its own card, even when
+  /// several needs share the same top-level category. [candidates] is
+  /// every provider matching that specific need; the card shows
+  /// [candidates].first and lets "البديل" cycle through the rest.
   List<_CategoryRecommendation> _recommendationsByCategory(
     List<Providers> allProviders,
   ) {
-    // Selected need ids grouped by their top-level category, preserving
-    // the order each category was first selected in — so exactly one
-    // card is built per selected category, not per selected need.
-    final orderedGroups = <String>[];
-    final needsByGroup = <String, List<String>>{};
+    final recommendations = <_CategoryRecommendation>[];
     for (final needId in widget.answers.selectedNeedsIds) {
       final group = _needIdToCategoryGroup[needId];
-      if (group == null) continue;
-      if (!needsByGroup.containsKey(group)) orderedGroups.add(group);
-      needsByGroup.putIfAbsent(group, () => []).add(needId);
-    }
+      final match = _needIdToProviderMatch[needId];
+      if (group == null || match == null) continue;
 
-    final recommendations = <_CategoryRecommendation>[];
-    for (final group in orderedGroups) {
       final seenIds = <int?>{};
       final candidates = <Providers>[];
-      for (final needId in needsByGroup[group]!) {
-        final match = _needIdToProviderMatch[needId];
-        if (match == null) continue;
-        for (final provider in allProviders) {
-          final categoryMatches = provider.category == match.category &&
-              (match.subCategory == null ||
-                  provider.subCategory == match.subCategory);
-          if (!categoryMatches || seenIds.contains(provider.id)) continue;
-          seenIds.add(provider.id);
-          candidates.add(provider);
-        }
+      for (final provider in allProviders) {
+        final categoryMatches = provider.category == match.category &&
+            (match.subCategory == null ||
+                provider.subCategory == match.subCategory);
+        if (!categoryMatches || seenIds.contains(provider.id)) continue;
+        seenIds.add(provider.id);
+        candidates.add(provider);
       }
-      // A category with no matching provider at all contributes no card,
+      // A need with no matching provider at all contributes no card,
       // rather than one with an empty candidate list.
       if (candidates.isNotEmpty) {
-        recommendations.add(_CategoryRecommendation(group, candidates));
+        recommendations.add(_CategoryRecommendation(needId, group, candidates));
       }
     }
     return recommendations;
@@ -599,7 +593,6 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
       return;
     }
 
-    String message;
     try {
       await FavoritesDatabaseService().saveFavoritePlan(
         eventType: widget.answers.eventType,
@@ -607,19 +600,33 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
         budget: widget.answers.budget,
         providers: providers,
       );
-      message = 'تمت الإضافة للمفضلة';
     } on NotSignedInException {
-      message = 'سجّل الدخول لحفظ الخطة بالمفضلة';
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('سجّل الدخول لحفظ الخطة بالمفضلة', style: GoogleFonts.amiri()),
+          backgroundColor: AppColors.Burgundy,
+        ),
+      );
+      return;
     } catch (_) {
-      message = 'تعذّر حفظ الخطة الآن، حاول لاحقًا';
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تعذّر حفظ الخطة الآن، حاول لاحقًا', style: GoogleFonts.amiri()),
+          backgroundColor: AppColors.Burgundy,
+        ),
+      );
+      return;
     }
 
+    // Saved successfully — go straight to the favorites tab to show it,
+    // rather than just a toast on this same screen. pushReplacement (not
+    // push) to match how AppBottomNavBar's own tab switches work, so this
+    // doesn't leave an extra RecommendedPlanScreen underneath on the stack.
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: GoogleFonts.amiri()),
-        backgroundColor: AppColors.Burgundy,
-      ),
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => const FavoritesScreen()),
     );
   }
 
@@ -628,29 +635,29 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
       child: GestureDetector(
         onTap: () => _saveFavoritePlan(context),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
           decoration: BoxDecoration(
             color: AppColors.Burgundy,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(22),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 26,
-                height: 26,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   color: AppColors.Gold,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.favorite, color: AppColors.Burgundy, size: 14),
+                child: Icon(Icons.favorite, color: AppColors.Burgundy, size: 20),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Text(
                 'اضغط للمفضلة',
                 style: GoogleFonts.amiri(
                   color: AppColors.white,
-                  fontSize: 13,
+                  fontSize: 17,
                   fontWeight: FontWeight.bold,
                 ),
               ),

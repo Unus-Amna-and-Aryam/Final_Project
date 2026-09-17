@@ -71,6 +71,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: AppColors.Beige,
         appBar: AppBar(
           backgroundColor: AppColors.Burgundy,
+          // Same reasoning as FavoritesScreen's AppBar: matches the
+          // back-arrow's color to the title's Beige.
+          iconTheme: IconThemeData(color: AppColors.Beige),
           title: Text(
             'أُنس',
             style: GoogleFonts.amiri(

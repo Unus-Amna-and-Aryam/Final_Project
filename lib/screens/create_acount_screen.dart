@@ -26,13 +26,6 @@ class _AuthScreenState extends State<CreatAcountScreen> {
   final Color mainButtonColor = AppColors.Burgundy_White;
   final Color mainButtonTextColor = AppColors.white;
 
-  // Logo image, pinned to the top-left of the upper bubble. Adjust these to
-  // resize/reposition it.
-  final double logoWidth = 200;
-  final double logoHeight = 200;
-  final double logoTop = 50;
-  final double logoLeft = 5;
-
   // "unus" image, top-right of the upper bubble. Adjust these to freely
   // resize/reposition it within the bubble.
   final double unusWidth = 240;
@@ -149,15 +142,27 @@ class _AuthScreenState extends State<CreatAcountScreen> {
 
             ClipPath(
               clipper: ConcaveBubbleClipper(),
-              child: Container(
+              child: SizedBox(
                 width: size.width,
                 // Derived from width (not height) so the bubble keeps the
                 // same proportions/curve on any screen aspect ratio instead
                 // of stretching or shrinking abnormally.
                 height: size.width * 0.93,
-                color: topBubbleColor,
                 child: Stack(
                   children: [
+                    // Zoomed in a bit past a plain BoxFit.cover (which would
+                    // show the background at its normal, more tightly
+                    // tiled scale) so the pattern reads bigger/bolder
+                    // within the bubble instead of busy and small.
+                    Positioned.fill(
+                      child: Transform.scale(
+                        scale: 1.3,
+                        child: Image.asset(
+                          'assets/images/hello_background.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
                     SafeArea(
                       child: Padding(
                         padding: const EdgeInsets.only(right: 28.0, top: 20.0, left: 28.0),
@@ -171,23 +176,17 @@ class _AuthScreenState extends State<CreatAcountScreen> {
                       ),
                     ),
                     Positioned(
-                      top: logoTop,
-                      left: logoLeft,
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        width: logoWidth,
-                        height: logoHeight,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                    Positioned(
                       top: unusTop,
                       right: unusRight,
+                      // Tinted to match "تخطي الان"'s color below, instead
+                      // of the golden shade baked into the source image.
                       child: Image.asset(
                         'assets/images/unus.png',
                         width: unusWidth,
                         height: unusHeight,
                         fit: BoxFit.contain,
+                        color: AppColors.Beige,
+                        colorBlendMode: BlendMode.srcIn,
                       ),
                     ),
                   ],
@@ -349,22 +348,37 @@ class _AuthScreenState extends State<CreatAcountScreen> {
               left: 0,
               child: GestureDetector(
                 onTap: _skipToOnboarding,
-                child: CustomPaint(
-                  size: const Size(140, 140),
-                  painter: BottomBubblePainter(color: topBubbleColor),
+                child: ClipPath(
+                  clipper: BottomBubbleClipper(),
                   child: SizedBox(
                     width: 140,
                     height: 140,
-                    child: Align(
-                      alignment: Alignment(-0.4, 0.4),
-                      child: Text(
-                        "تخطي الان",
-                        style: GoogleFonts.amiri(
-                          color: AppColors.Beige,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                    child: Stack(
+                      children: [
+                        // Same zoomed-in scale as the top bubble's
+                        // background, so the pattern reads at a matching
+                        // size in both places.
+                        Positioned.fill(
+                          child: Transform.scale(
+                            scale: 3,
+                            child: Image.asset(
+                              'assets/images/hello_background.png',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
                         ),
-                      ),
+                        Align(
+                          alignment: Alignment(-0.4, 0.4),
+                          child: Text(
+                            "تخطي الان",
+                            style: GoogleFonts.amiri(
+                              color: AppColors.Beige,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -448,28 +462,20 @@ class ConcaveBubbleClipper extends CustomClipper<Path> {
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
 
-class BottomBubblePainter extends CustomPainter {
-  final Color color;
-  BottomBubblePainter({required this.color});
-
+class BottomBubbleClipper extends CustomClipper<Path> {
   @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
+  Path getClip(Size size) {
     final path = Path();
     path.moveTo(0, 0);
     path.quadraticBezierTo(
-      size.width * 0.85, size.height * 0.15, 
+      size.width * 0.85, size.height * 0.15,
       size.width, size.height,
     );
     path.lineTo(0, size.height);
     path.close();
-
-    canvas.drawPath(path, paint);
+    return path;
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

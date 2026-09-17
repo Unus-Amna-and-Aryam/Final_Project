@@ -59,6 +59,12 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         backgroundColor: AppColors.Beige,
         appBar: AppBar(
           backgroundColor: AppColors.Burgundy,
+          // The back arrow AppBar auto-shows whenever there's a route to
+          // pop to (e.g. the onboarding question stack still underneath,
+          // since bottom-nav tab switches use pushReplacement, which only
+          // swaps the topmost route) — matches the title's Beige instead
+          // of the default icon color.
+          iconTheme: IconThemeData(color: AppColors.Beige),
           title: Text(
             'المفضلة',
             style: GoogleFonts.amiri(
