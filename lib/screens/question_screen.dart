@@ -264,6 +264,9 @@ class _QuestionScreenState extends State<QuestionScreen> {
                 ),
               ),
               Expanded(
+                // The stretch-overscroll indicator is disabled app-wide in
+                // main.dart's MaterialApp.scrollBehavior — see the note
+                // there for why (this "needs" list is what surfaced it).
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: _buildOptions(question),
@@ -427,44 +430,50 @@ class _QuestionScreenState extends State<QuestionScreen> {
                   ),
                 ),
                if (isExpanded)
-                  ConstrainedBox(
-                    constraints: BoxConstraints(maxHeight: 160),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
-                      child: ListView(
-                         shrinkWrap: true,
-                        // mainAxisSize: MainAxisSize.min,
-                        children: category.items.map((item) {
-                          final isSelected = _selectedIds.contains(item.id);
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: GestureDetector(
-                              onTap: () => _toggle(item.id),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    isSelected
-                                        ? Icons.check_box
-                                        : Icons.check_box_outline_blank,
-                                    size: 22,
-                                    color: isSelected
-                                        ? AppColors.Gold
-                                        : Colors.grey.shade300,
+                  // A plain Column, not a nested scrollable ListView — this
+                  // used to be capped at a 160px ConstrainedBox with its own
+                  // ListView so a long category scrolled independently, but
+                  // that nested vertical scrollable fought the outer
+                  // SingleChildScrollView (_buildOptions's caller) over the
+                  // drag gesture. On Android that showed up as a stretch/
+                  // overscroll glitch right at the scroll boundary whenever
+                  // the last category was expanded and long. Letting the
+                  // outer scroll view handle the whole page — including
+                  // every expanded category, however long — removes the
+                  // conflict entirely.
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
+                    child: Column(
+                      children: category.items.map((item) {
+                        final isSelected = _selectedIds.contains(item.id);
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: GestureDetector(
+                            onTap: () => _toggle(item.id),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  isSelected
+                                      ? Icons.check_box
+                                      : Icons.check_box_outline_blank,
+                                  size: 22,
+                                  color: isSelected
+                                      ? AppColors.Gold
+                                      : Colors.grey.shade300,
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  item.title,
+                                  style: GoogleFonts.amiri(
+                                    fontSize: 18,
+                                    color: AppColors.Burgundy,
                                   ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    item.title,
-                                    style: GoogleFonts.amiri(
-                                      fontSize: 18,
-                                      color: AppColors.Burgundy,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          );
-                        }).toList(),
-                      ),
+                          ),
+                        );
+                      }).toList(),
                     ),
                   ),
               ],
