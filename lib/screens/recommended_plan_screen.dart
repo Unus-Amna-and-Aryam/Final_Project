@@ -8,6 +8,7 @@ import 'package:final_project/models/providers_model.dart';
 import 'package:final_project/screens/favorites_screen.dart';
 import 'package:final_project/screens/profile_screen.dart';
 import 'package:final_project/screens/provider_detail_screen.dart';
+import 'package:final_project/screens/question_screen.dart';
 import 'package:final_project/service/favorites_database_service.dart';
 import 'package:final_project/service/providers_database_service.dart';
 import 'package:final_project/widgets/app_bottom_nav_bar.dart';
@@ -282,13 +283,15 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
         children: [
           Align(
             alignment: AlignmentDirectional.centerStart,
+            // arrow_back (full arrow with a shaft, not just the arrow_back_ios
+            // chevron) — mirrors to point right under this app's RTL
+            // Directionality, matching its position on the right. Not a
+            // plain pop(): question 5 ("needs") is no longer on the
+            // Navigator stack by the time this screen exists (see
+            // pushNeedsQuestion's doc comment), so this reopens it directly.
             child: _CircleIconButton(
-              icon: Icons.arrow_forward_ios,
-              onTap: () {
-                if (Navigator.of(context).canPop()) {
-                  Navigator.of(context).pop();
-                }
-              },
+              icon: Icons.arrow_back,
+              onTap: () => pushNeedsQuestion(context, widget.answers),
             ),
           ),
           Text(
@@ -733,7 +736,9 @@ class _CircleIconButton extends StatelessWidget {
           ],
         ),
         alignment: Alignment.center,
-        child: Icon(icon, color: AppColors.Burgundy, size: 16),
+        // 24: matches question_screen.dart's back button (IconButton's
+        // default iconSize, left unspecified there).
+        child: Icon(icon, color: AppColors.Burgundy, size: 24),
       ),
     );
   }

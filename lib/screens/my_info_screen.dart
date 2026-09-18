@@ -84,6 +84,7 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
         backgroundColor: AppColors.Beige,
         appBar: AppBar(
           backgroundColor: AppColors.Burgundy,
+          iconTheme: IconThemeData(color: AppColors.Beige),
           title: Text(
             'معلوماتي',
             style: GoogleFonts.amiri(

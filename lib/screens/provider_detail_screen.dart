@@ -40,6 +40,7 @@ class ProviderDetailScreen extends StatelessWidget {
         backgroundColor: AppColors.Beige,
         appBar: AppBar(
           backgroundColor: AppColors.Burgundy,
+          iconTheme: IconThemeData(color: AppColors.Beige),
           title: Text(
             provider.name ?? 'تفاصيل الخدمة',
             style: GoogleFonts.amiri(

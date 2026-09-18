@@ -40,27 +40,7 @@ void _pushQuestion(
   // (not a grid) just renders however many are left — nothing to
   // recalculate.
   if (question.id == 'needs') {
-    final excludedCategoryIds = <String>{
-      if (eventTypeId != 'wedding') 'bride',
-      if (locationId == 'indoor') 'venues',
-    };
-    if (excludedCategoryIds.isNotEmpty) {
-      question = QuestionModel(
-        id: question.id,
-        step: question.step,
-        totalSteps: question.totalSteps,
-        title: question.title,
-        options: question.options,
-        allowMultiSelect: question.allowMultiSelect,
-        layout: question.layout,
-        sliderSteps: question.sliderSteps,
-        sliderUnitLabel: question.sliderUnitLabel,
-        sliderQuickPicks: question.sliderQuickPicks,
-        categories: question.categories
-            ?.where((category) => !excludedCategoryIds.contains(category.id))
-            .toList(),
-      );
-    }
+    question = _needsQuestion(eventTypeId: eventTypeId, locationId: locationId);
   }
 
   Navigator.of(context).push(
@@ -86,6 +66,8 @@ void _pushQuestion(
               : answers.eventType;
           final nextAnswers = OnboardingAnswers(
             eventType: nextEventType,
+            eventTypeId: nextEventTypeId,
+            locationId: nextLocationId,
             guestCount: question.id == 'guests_count' && selectedIds.isNotEmpty
                 ? int.parse(selectedIds.first)
                 : answers.guestCount,
@@ -117,17 +99,86 @@ void _pushQuestion(
   );
 }
 
+// Question 5 ("needs") with its "العروس" and "قاعات واستراحات" categories
+// filtered per [_pushQuestion]'s comment above — shared with
+// [pushNeedsQuestion] so re-opening this question later applies the exact
+// same exclusions as reaching it the first time through the flow.
+QuestionModel _needsQuestion({String? eventTypeId, String? locationId}) {
+  final question = onboardingQuestions.last; // id == 'needs'
+  final excludedCategoryIds = <String>{
+    if (eventTypeId != 'wedding') 'bride',
+    if (locationId == 'indoor') 'venues',
+  };
+  if (excludedCategoryIds.isEmpty) return question;
+  return QuestionModel(
+    id: question.id,
+    step: question.step,
+    totalSteps: question.totalSteps,
+    title: question.title,
+    options: question.options,
+    allowMultiSelect: question.allowMultiSelect,
+    layout: question.layout,
+    sliderSteps: question.sliderSteps,
+    sliderUnitLabel: question.sliderUnitLabel,
+    sliderQuickPicks: question.sliderQuickPicks,
+    categories: question.categories
+        ?.where((category) => !excludedCategoryIds.contains(category.id))
+        .toList(),
+  );
+}
+
+/// Re-opens question 5 ("needs") pre-filled with [answers]'s current
+/// selections, so RecommendedPlanScreen's header back button can send the
+/// user to revise their needs. A plain Navigator.pop() can't reach it: once
+/// onboarding first finishes, [_pushQuestion] hands off to
+/// RecommendedPlanScreen with `pushReplacement`, which drops question 5's
+/// own route from the stack — there's nothing left there to pop back to.
+void pushNeedsQuestion(BuildContext context, OnboardingAnswers answers) {
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (context) => QuestionScreen(
+        question: _needsQuestion(
+          eventTypeId: answers.eventTypeId,
+          locationId: answers.locationId,
+        ),
+        initialSelectedIds: answers.selectedNeedsIds.toSet(),
+        onNext: (selectedIds) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => RecommendedPlanScreen(
+                answers: OnboardingAnswers(
+                  eventType: answers.eventType,
+                  eventTypeId: answers.eventTypeId,
+                  locationId: answers.locationId,
+                  guestCount: answers.guestCount,
+                  budget: answers.budget,
+                  selectedNeedsIds: selectedIds,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    ),
+  );
+}
+
 /// One onboarding question page: progress header, a grid/list/wrap of
 /// selectable option cards (driven by [QuestionModel.layout]), and a
 /// pinned "التالي" button. Reusable across all onboarding questions.
 class QuestionScreen extends StatefulWidget {
   final QuestionModel question;
   final void Function(List<String> selectedIds) onNext;
+  // Overrides the options'/categories' own isDefaultSelected flags — used by
+  // pushNeedsQuestion to reopen this question with the answers it already
+  // collected, instead of always starting from the question's own defaults.
+  final Set<String>? initialSelectedIds;
 
   const QuestionScreen({
     super.key,
     required this.question,
     required this.onNext,
+    this.initialSelectedIds,
   });
 
   @override
@@ -145,10 +196,15 @@ class _QuestionScreenState extends State<QuestionScreen> {
   @override
   void initState() {
     super.initState();
+    final initial = widget.initialSelectedIds;
     if (widget.question.layout == QuestionLayout.slider) {
       final steps = widget.question.sliderSteps!;
-      _sliderIndex = 0;
+      _sliderIndex = initial != null && initial.isNotEmpty
+          ? steps.indexOf(int.parse(initial.first)).clamp(0, steps.length - 1)
+          : 0;
       _selectedIds = {steps[_sliderIndex].toString()};
+    } else if (initial != null) {
+      _selectedIds = Set.of(initial);
     } else if (widget.question.layout == QuestionLayout.expandableMultiSelect) {
       _selectedIds = widget.question.categories!
           .expand((category) => category.items)
@@ -202,7 +258,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         Container(
                           width: 40,
@@ -302,7 +358,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Icon(Icons.arrow_back, color: AppColors.white, size: 20),
+                        Icon(Icons.arrow_forward, color: AppColors.white, size: 20),
                       ],
                     ),
                   ),

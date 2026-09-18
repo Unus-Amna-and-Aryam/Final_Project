@@ -22,7 +22,6 @@ Future<void> main() async {
 
 
    await testConnection(); 
-  // ← تنادي عليها هنا، تحت الـ initialize مباشرة
   runApp(const MainApp());
 }
 
@@ -37,12 +36,6 @@ Future<void> testConnection() async {
   }
 }
 
-// Android's default stretch-overscroll indicator visually deforms
-// ("stretches") the whole screen whenever a scroll view is dragged past its
-// content bounds — reported on both question_screen.dart's long "needs"
-// list and RecommendedPlanScreen's scrollable body. Disabling it here, once,
-// for every scrollable in the app (rather than per-screen) means neither any
-// existing screen nor a future one can hit this again by omission.
 class _AppScrollBehavior extends MaterialScrollBehavior {
   @override
   Widget buildOverscrollIndicator(

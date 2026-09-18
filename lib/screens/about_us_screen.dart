@@ -15,6 +15,7 @@ class AboutUsScreen extends StatelessWidget {
         backgroundColor: AppColors.Beige,
         appBar: AppBar(
           backgroundColor: AppColors.Burgundy,
+          iconTheme: IconThemeData(color: AppColors.Beige),
           title: Text(
             'من نحن',
             style: GoogleFonts.amiri(

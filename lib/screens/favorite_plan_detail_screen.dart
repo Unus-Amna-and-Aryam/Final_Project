@@ -21,6 +21,7 @@ class FavoritePlanDetailScreen extends StatelessWidget {
         backgroundColor: AppColors.Beige,
         appBar: AppBar(
           backgroundColor: AppColors.Burgundy,
+          iconTheme: IconThemeData(color: AppColors.Beige),
           title: Text(
             plan.eventType.isNotEmpty ? plan.eventType : 'تفاصيل الخطة',
             style: GoogleFonts.amiri(
