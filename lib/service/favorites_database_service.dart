@@ -9,6 +9,16 @@ import 'package:final_project/models/providers_model.dart';
 /// them, so saving is refused rather than silently using a fake id.
 class NotSignedInException implements Exception {}
 
+/// One row of `favorite_providers`: [id] is that row's own id (used to
+/// delete it), distinct from [provider].id (the original provider's id in
+/// the `providers` table, kept only as part of the saved snapshot).
+class FavoriteProviderEntry {
+  final int id;
+  final Providers provider;
+
+  const FavoriteProviderEntry({required this.id, required this.provider});
+}
+
 /// Persists favorites (single providers and full recommended plans) to
 /// Supabase, scoped to the current signed-in user — see the `favorite_providers`
 /// and `favorite_plans` tables (schema in supabase/favorites_schema.sql).
@@ -36,7 +46,7 @@ class FavoritesDatabaseService {
   }
 
   // يجيب كل المزودين المفضلين للمستخدم الحالي، الأحدث أولاً.
-  Future<List<Providers>> getFavoriteProviders() async {
+  Future<List<FavoriteProviderEntry>> getFavoriteProviders() async {
     final userId = _currentUserId;
     if (userId == null) return [];
 
@@ -46,8 +56,24 @@ class FavoritesDatabaseService {
         .eq('user_id', userId)
         .order('created_at', ascending: false);
     return (response as List)
-        .map((row) => Providers.fromJson(row['provider'] as Map<String, dynamic>))
+        .map((row) => FavoriteProviderEntry(
+              id: row['id'] as int,
+              provider:
+                  Providers.fromJson(row['provider'] as Map<String, dynamic>),
+            ))
         .toList();
+  }
+
+  // يحذف مزوداً مفضلاً واحداً (زر القلب الذهبي في FavoritesScreen).
+  Future<void> deleteFavoriteProvider(int id) async {
+    final userId = _currentUserId;
+    if (userId == null) throw NotSignedInException();
+
+    await supabase
+        .from('favorite_providers')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId);
   }
 
   // يحفظ خطة كاملة بالمفضلة (زر "اضغط للمفضلة" العام أسفل RecommendedPlanScreen).
@@ -82,5 +108,17 @@ class FavoritesDatabaseService {
     return (response as List)
         .map((row) => FavoritePlan.fromJson(row as Map<String, dynamic>))
         .toList();
+  }
+
+  // يحذف خطة مفضلة واحدة (زر القلب الذهبي في FavoritesScreen).
+  Future<void> deleteFavoritePlan(int id) async {
+    final userId = _currentUserId;
+    if (userId == null) throw NotSignedInException();
+
+    await supabase
+        .from('favorite_plans')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId);
   }
 }

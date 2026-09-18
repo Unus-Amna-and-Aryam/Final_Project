@@ -259,6 +259,10 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
                 _buildTagline(),
                 const SizedBox(height: 20),
                 _buildBudgetCard(remaining),
+                if (remaining < 0) ...[
+                  const SizedBox(height: 10),
+                  _buildBudgetWarning(),
+                ],
                 const SizedBox(height: 24),
                 _buildServicesSection(context),
                 const SizedBox(height: 8),
@@ -327,6 +331,27 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
             fontSize: 15,
             fontWeight: FontWeight.w600,
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBudgetWarning() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.Burgundy.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.Burgundy.withOpacity(0.4), width: 1.2),
+      ),
+      child: Text(
+        'الميزانية أو عدد الأشخاص غير مناسبين',
+        textAlign: TextAlign.center,
+        style: GoogleFonts.amiri(
+          color: AppColors.Burgundy,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

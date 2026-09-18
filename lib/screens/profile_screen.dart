@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:final_project/constants/app_colors.dart';
 import 'package:final_project/models/onboarding_answers.dart';
 import 'package:final_project/screens/about_us_screen.dart';
+import 'package:final_project/screens/create_acount_screen.dart';
 import 'package:final_project/screens/favorites_screen.dart';
 import 'package:final_project/screens/my_info_screen.dart';
 import 'package:final_project/screens/recommended_plan_screen.dart';
@@ -44,6 +46,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // The name may have just been added/edited on MyInfoScreen — reload it
     // so it shows immediately under the profile circle on return.
     _loadDisplayName();
+  }
+
+  Future<void> _signOut(BuildContext context) async {
+    await Supabase.instance.client.auth.signOut();
+    if (!context.mounted) return;
+    // Clears the whole stack (this profile tab and everything under it),
+    // so the user can't navigate back into signed-in screens with the back
+    // button after signing out.
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const CreatAcountScreen()),
+      (route) => false,
+    );
   }
 
   void _handleNavTap(BuildContext context, BottomNavItem item) {
@@ -118,6 +132,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 14),
                 _buildWhereWeAreCard(),
+                const SizedBox(height: 14),
+                _ProfileMenuCard(
+                  title: 'تسجيل الخروج',
+                  icon: Icons.logout,
+                  color: Colors.red.shade700,
+                  onTap: () => _signOut(context),
+                ),
               ],
             ),
           ),
@@ -198,24 +219,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (_whereExpanded)
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 0, 14, 18),
-              child: Row(
+              child: Column(
                 children: [
-                  Expanded(
-                    child: _CityCard(
-                      name: 'الرياض',
-                      comingSoon: false,
-                      // TODO: navigate to the Riyadh destination once it's
-                      // decided what this should open.
-                      onTap: () {},
-                    ),
+                  _CityCard(
+                    name: 'الرياض',
+                    imagePath: 'assets/images/riyadh_d.jpg',
+                    comingSoon: false,
+                    // TODO: navigate to the Riyadh destination once it's
+                    // decided what this should open.
+                    onTap: () {},
                   ),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: _CityCard(name: 'جدة', comingSoon: true),
+                  const SizedBox(height: 12),
+                  const _CityCard(
+                    name: 'جدة',
+                    imagePath: 'assets/images/jeddah_d.jpg',
+                    comingSoon: true,
                   ),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: _CityCard(name: 'الدمام', comingSoon: true),
+                  const SizedBox(height: 12),
+                  const _CityCard(
+                    name: 'الدمام',
+                    imagePath: 'assets/images/dhahran_d.jpg',
+                    comingSoon: true,
                   ),
                 ],
               ),
@@ -232,11 +256,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
 class _ProfileMenuCard extends StatelessWidget {
   final String title;
   final VoidCallback onTap;
+  // Defaults match every other menu card ("معلوماتي"/"من نحن"); overridden
+  // by the sign-out card to visually set it apart as a different kind of
+  // action.
+  final IconData icon;
+  final Color? color;
 
-  const _ProfileMenuCard({required this.title, required this.onTap});
+  const _ProfileMenuCard({
+    required this.title,
+    required this.onTap,
+    this.icon = Icons.arrow_forward_ios,
+    this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final resolvedColor = color ?? AppColors.Burgundy;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -261,12 +296,16 @@ class _ProfileMenuCard extends StatelessWidget {
               Text(
                 title,
                 style: GoogleFonts.amiri(
-                  color: AppColors.Burgundy,
+                  color: resolvedColor,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, size: 16, color: AppColors.Burgundy),
+              Icon(
+                icon,
+                size: icon == Icons.arrow_forward_ios ? 16 : 20,
+                color: resolvedColor,
+              ),
             ],
           ),
         ),
@@ -275,85 +314,76 @@ class _ProfileMenuCard extends StatelessWidget {
   }
 }
 
-/// One city card inside the expanded "أين نحن؟" section. [comingSoon] cities
-/// show a "قريبًا" badge, are dimmed, and aren't tappable ([onTap] ignored).
+/// One city card inside the expanded "أين نحن؟" section: a full-width photo
+/// with the city name overlaid top-right. [comingSoon] cities are dimmed,
+/// show "قريبا ..." bottom-left, and aren't tappable ([onTap] ignored).
 class _CityCard extends StatelessWidget {
   final String name;
+  final String imagePath;
   final bool comingSoon;
   final VoidCallback? onTap;
 
-  const _CityCard({required this.name, required this.comingSoon, this.onTap});
+  const _CityCard({
+    required this.name,
+    required this.imagePath,
+    required this.comingSoon,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final card = Container(
-      padding: const EdgeInsets.all(8),
+      height: 130,
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: AppColors.Beige,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.Gold.withValues(alpha: 0.5)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // Placeholder for the city photo — no real image asset for
-              // this yet, replace with an actual photo of the city later.
-              Container(
-                height: 56,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                alignment: Alignment.center,
-                child: Icon(Icons.location_city, color: AppColors.Burgundy, size: 26),
+          Image.asset(imagePath, fit: BoxFit.cover),
+          if (comingSoon) Container(color: Colors.black.withValues(alpha: 0.45)),
+          Positioned(
+            top: 10,
+            right: 14,
+            child: Text(
+              name,
+              style: GoogleFonts.amiri(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                shadows: const [Shadow(blurRadius: 6, color: Colors.black87)],
               ),
-              if (comingSoon)
-                Positioned(
-                  top: -6,
-                  right: -6,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppColors.Gold,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'قريبًا',
-                      style: GoogleFonts.amiri(
-                        color: AppColors.Burgundy,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            name,
-            style: GoogleFonts.amiri(
-              color: AppColors.Burgundy,
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
             ),
           ),
+          if (comingSoon)
+            Positioned(
+              bottom: 10,
+              left: 14,
+              child: Text(
+                'قريبا ...',
+                style: GoogleFonts.amiri(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  shadows: const [Shadow(blurRadius: 6, color: Colors.black87)],
+                ),
+              ),
+            ),
         ],
       ),
     );
 
     if (comingSoon) {
-      return Opacity(opacity: 0.55, child: card);
+      return card;
     }
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: card,
       ),
     );

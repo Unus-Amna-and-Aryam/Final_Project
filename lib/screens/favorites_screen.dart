@@ -23,15 +23,34 @@ class FavoritesScreen extends StatefulWidget {
 }
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
-  late final Future<List<Providers>> _favoriteProvidersFuture;
+  final _service = FavoritesDatabaseService();
+  late final Future<List<FavoriteProviderEntry>> _favoriteProvidersFuture;
   late final Future<List<FavoritePlan>> _favoritePlansFuture;
+
+  // Ids removed via the gold heart button, filtered out of the loaded
+  // futures' data below instead of refetching — the delete already
+  // happened in Supabase by the time an id lands here (see
+  // _FavoriteHeartButton.onRemove).
+  final Set<int> _removedProviderIds = {};
+  final Set<int> _removedPlanIds = {};
 
   @override
   void initState() {
     super.initState();
-    final service = FavoritesDatabaseService();
-    _favoriteProvidersFuture = service.getFavoriteProviders();
-    _favoritePlansFuture = service.getFavoritePlans();
+    _favoriteProvidersFuture = _service.getFavoriteProviders();
+    _favoritePlansFuture = _service.getFavoritePlans();
+  }
+
+  Future<void> _removeFavoriteProvider(int id) async {
+    await _service.deleteFavoriteProvider(id);
+    if (!mounted) return;
+    setState(() => _removedProviderIds.add(id));
+  }
+
+  Future<void> _removeFavoritePlan(int id) async {
+    await _service.deleteFavoritePlan(id);
+    if (!mounted) return;
+    setState(() => _removedPlanIds.add(id));
   }
 
   void _handleNavTap(BottomNavItem item) {
@@ -114,7 +133,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
 
   Widget _buildFavoriteItemsSection(BuildContext context) {
-    return FutureBuilder<List<Providers>>(
+    return FutureBuilder<List<FavoriteProviderEntry>>(
       future: _favoriteProvidersFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
@@ -123,8 +142,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             child: Center(child: CircularProgressIndicator()),
           );
         }
-        final providers = snapshot.data;
-        if (snapshot.hasError || providers == null || providers.isEmpty) {
+        final entries = snapshot.data
+            ?.where((e) => !_removedProviderIds.contains(e.id))
+            .toList();
+        if (snapshot.hasError || entries == null || entries.isEmpty) {
           return _emptyMessage('لا توجد عناصر مفضلة بعد');
         }
 
@@ -136,10 +157,19 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             // direction for us, so the first item lands on the right and
             // scrolling right-to-left reveals the rest, matching the app's
             // reading direction — no extra reverse: true needed.
-            itemCount: providers.length,
+            itemCount: entries.length,
             separatorBuilder: (context, index) => const SizedBox(width: 12),
-            itemBuilder: (context, index) =>
-                _FavoriteProviderCard(provider: providers[index]),
+            // Keyed by the favorite row's own id so Flutter maps each
+            // card's Element (and so each heart button's filled/empty
+            // state) to the *same* entry across rebuilds — without this,
+            // removing one card mid-list shifted every card after it onto
+            // the wrong (stale) heart state, since a keyless list matches
+            // old/new children by position, not identity.
+            itemBuilder: (context, index) => _FavoriteProviderCard(
+              key: ValueKey(entries[index].id),
+              provider: entries[index].provider,
+              onRemove: () => _removeFavoriteProvider(entries[index].id),
+            ),
           ),
         );
       },
@@ -156,16 +186,31 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             child: Center(child: CircularProgressIndicator()),
           );
         }
-        final plans = snapshot.data;
+        final plans = snapshot.data
+            ?.where((p) => p.id == null || !_removedPlanIds.contains(p.id))
+            .toList();
         if (snapshot.hasError || plans == null || plans.isEmpty) {
           return _emptyMessage('لا توجد خطط مفضلة بعد');
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (final plan in plans) _FavoritePlanCard(plan: plan),
-          ],
+        return SizedBox(
+          height: 120,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: plans.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 12),
+            // Keyed for the same reason as the provider cards above — see
+            // that itemBuilder's comment.
+            itemBuilder: (context, index) {
+              final plan = plans[index];
+              return _FavoritePlanCard(
+                key: ValueKey(plan.id ?? -1 - index),
+                plan: plan,
+                onRemove:
+                    plan.id == null ? null : () => _removeFavoritePlan(plan.id!),
+              );
+            },
+          ),
         );
       },
     );
@@ -182,8 +227,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 /// One favorited provider, as a landscape card in the horizontal list.
 class _FavoriteProviderCard extends StatelessWidget {
   final Providers provider;
+  final Future<void> Function() onRemove;
 
-  const _FavoriteProviderCard({required this.provider});
+  const _FavoriteProviderCard({
+    super.key,
+    required this.provider,
+    required this.onRemove,
+  });
 
   String get _subtitle {
     final parts = [provider.category, provider.subCategory]
@@ -194,73 +244,80 @@ class _FavoriteProviderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => ProviderDetailScreen(provider: provider),
-          ),
-        ),
-        child: Container(
-          width: 200,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.white,
+    return Stack(
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => ProviderDetailScreen(provider: provider),
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                provider.name ?? 'بدون اسم',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.amiri(
-                  color: AppColors.Burgundy,
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (_subtitle.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  _subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.amiri(
-                    color: Colors.grey.shade600,
-                    fontSize: 12,
+            ),
+            child: Container(
+              width: 200,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.06),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
                   ),
-                ),
-              ],
-            ],
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    provider.name ?? 'بدون اسم',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.amiri(
+                      color: AppColors.Burgundy,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (_subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      _subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.amiri(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
-      ),
+        Positioned(top: 8, left: 8, child: _FavoriteHeartButton(onRemove: onRemove)),
+      ],
     );
   }
 }
 
-/// One favorited full plan, as a nearly full-width card in the vertical
-/// list.
+/// One favorited full plan, as a fixed-width card in the horizontal list.
 class _FavoritePlanCard extends StatelessWidget {
   final FavoritePlan plan;
+  // Null when [plan] somehow has no row id yet (see FavoritePlan.id) — the
+  // heart button is left off entirely rather than being unable to delete.
+  final Future<void> Function()? onRemove;
 
-  const _FavoritePlanCard({required this.plan});
+  const _FavoritePlanCard({super.key, required this.plan, this.onRemove});
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    final card = Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -270,7 +327,7 @@ class _FavoritePlanCard extends StatelessWidget {
           ),
         ),
         child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
+          width: 220,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: AppColors.white,
@@ -312,6 +369,72 @@ class _FavoritePlanCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+
+    if (onRemove == null) return card;
+    return Stack(
+      children: [
+        card,
+        Positioned(top: 8, left: 8, child: _FavoriteHeartButton(onRemove: onRemove!)),
+      ],
+    );
+  }
+}
+
+/// The gold heart button overlaid on a favorite card ([_FavoriteProviderCard]
+/// / [_FavoritePlanCard]): filled by default, flips to an outline as soon as
+/// it's tapped (before the delete even finishes), then the card disappears
+/// from the list once [onRemove] — which does the real Supabase delete and
+/// updates the parent's state — succeeds. On failure it flips back to
+/// filled and the card stays.
+class _FavoriteHeartButton extends StatefulWidget {
+  final Future<void> Function() onRemove;
+
+  const _FavoriteHeartButton({required this.onRemove});
+
+  @override
+  State<_FavoriteHeartButton> createState() => _FavoriteHeartButtonState();
+}
+
+class _FavoriteHeartButtonState extends State<_FavoriteHeartButton> {
+  bool _filled = true;
+  bool _busy = false;
+
+  Future<void> _handleTap() async {
+    if (_busy) return;
+    setState(() {
+      _filled = false;
+      _busy = true;
+    });
+    try {
+      await widget.onRemove();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _filled = true;
+        _busy = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تعذّر الحذف الآن، حاول لاحقًا', style: GoogleFonts.amiri()),
+          backgroundColor: AppColors.Burgundy,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _handleTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        child: Icon(
+          _filled ? Icons.favorite : Icons.favorite_border,
+          color: AppColors.Gold,
+          size: 22,
         ),
       ),
     );
