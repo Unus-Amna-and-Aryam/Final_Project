@@ -4,7 +4,7 @@
 
 # Unus (أُنس)
 
-A Flutter app that helps you plan your event with ease — from a family gathering to a wedding night — by suggesting a complete plan that fits your budget and guest count, and connecting you with the best service providers in one place.
+A Flutter app that solves many common challenges people face when planning events — from family gatherings to wedding nights — by eliminating the hassle of searching across multiple different places. It helps you plan with ease by suggesting a complete plan tailored to your budget and guest count, and connecting you with the best service providers in one place.
 
 [![Flutter](https://img.shields.io/badge/Flutter-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-0175C2?logo=dart&logoColor=white)](https://dart.dev)
@@ -39,11 +39,11 @@ The logo carries that same idea: four interlocking gold rings arranged in a diam
 ## Key Features
 
 - **Onboarding** — an interactive question flow (selectable cards, sliders, collapsible categories) that captures the user's preferences.
-- **Recommended plan** — a service-provider recommendation built from the user's answers, with details for each provider and the option to swap in an alternative.
-- **Favorites** — save individual providers or full plans, synced through Supabase per signed-in user.
-- **Account** — sign in / sign up via Supabase Auth, with a "Skip for now" flow to browse the app without an account.
-- **Profile** — edit the display name, a "Who we are" page, and an interactive "Where are we?" card showing available and upcoming cities.
-- **Full Arabic support** — RTL layout and Google Fonts (Amiri) throughout every screen.
+- **Recommended plan** — A tailored service-provider recommendation built directly from the user's answers, offering detailed info for each provider with the flexibility to swap in an alternative.
+- **Favorites** — Allows users to save individual providers or full event plans, with real-time synchronization through Supabase per signed-in user.
+- **Account** — Secure sign-in and sign-up via Supabase Auth, featuring a "Skip for now" guest flow to let users browse and explore the app freely without an account.
+- **Profile** — Includes display name editing, a dedicated "Who we are" story page, and an interactive "Where are we?" card displaying current and upcoming operational cities.
+- **Full Arabic support** —Built with a complete Right-to-Left (RTL) layout and integrated Google Fonts (Amiri) across every single screen to reflect an authentic cultural identity.
 
 ## Screenshots
 
