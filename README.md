@@ -20,7 +20,7 @@ A Flutter app that helps you plan your event with ease — from a family gatheri
 
 The application streamlines event planning through a smart, user-centric journey:
 
-## Interactive Onboarding & Assessment: 
+**Interactive Onboarding & Assessment:**
 The app begins by asking a few quick, targeted questions regarding the event type, location, guest count, budget, and specific requirements.
 
 ## Smart Plan Generation:
