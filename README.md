@@ -23,10 +23,10 @@ The application streamlines event planning through a smart, user-centric journey
 **Interactive Onboarding & Assessment:**
 The app begins by asking a few quick, targeted questions regarding the event type, location, guest count, budget, and specific requirements.
 
-## Smart Plan Generation:
+**Smart Plan Generation:**
 Based on the user's inputs, Unus instantly suggests a complete, customized event plan that bundles the best-fit service providers—including venues, catering, decor, hospitality, photography, and specialized bridal services.
 
-## Seamless Management & Favorites: 
+**Seamless Management & Favorites:** 
 Users can easily explore options, save their favorite service providers and customized plans to their profile, and revisit them anytime for effortless decision-making.
 
 
