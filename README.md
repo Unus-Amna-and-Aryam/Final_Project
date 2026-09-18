@@ -81,7 +81,7 @@ supabase/
 └── favorites_schema.sql   # SQL script to create the favorite providers/plans tables in Supabase
 ```
 
-### Screens 
+### Classes  
 
 | Class | Description |
 |---|---|
