@@ -24,7 +24,7 @@ A Flutter app that helps you plan your event with ease — from a family gatheri
 
 ## The Name & Logo
 
-**"Uns" (أُنس)** is an Arabic word for the warmth of companionship — the comfort and ease of being surrounded by people you love. It's the feeling every gathering the app helps plan is meant to create.
+**"Unus" (أُنس)** is an Arabic word for the warmth of companionship — the comfort and ease of being surrounded by people you love. It's the feeling every gathering the app helps plan is meant to create.
 
 The logo carries that same idea: four interlocking gold rings arranged in a diamond, each one looping into the next — like people gathered close and bonded together in one continuous circle, rather than standing apart. Set in Gold against a deep Burgundy backdrop, it reflects the warmth and togetherness at the heart of the app.
 
