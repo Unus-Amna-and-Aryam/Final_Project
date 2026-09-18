@@ -14,13 +14,21 @@ A Flutter app that helps you plan your event with ease — from a family gatheri
 
 ---
 
-## About
+## About Unus 
 
-**Unus** is a Flutter Camp graduation project — an app that walks the user from the first idea for an event all the way to executing it:
+**Unus** is a comprehensive Flutter Camp graduation project designed to be an all-in-one digital companion that guides users seamlessly from the initial concept of an event all the way to its full execution.
 
-1. Asks a few quick questions (event type, location, guest count, budget, and needs).
-2. Suggests a complete plan bundling the best-fit service providers (venues, catering, decor, hospitality, photography, and bridal services).
-3. Lets the user save favorite providers and plans and come back to them later.
+The application streamlines event planning through a smart, user-centric journey:
+
+## Interactive Onboarding & Assessment: 
+The app begins by asking a few quick, targeted questions regarding the event type, location, guest count, budget, and specific requirements.
+
+## Smart Plan Generation:
+Based on the user's inputs, Unus instantly suggests a complete, customized event plan that bundles the best-fit service providers—including venues, catering, decor, hospitality, photography, and specialized bridal services.
+
+## Seamless Management & Favorites: 
+Users can easily explore options, save their favorite service providers and customized plans to their profile, and revisit them anytime for effortless decision-making.
+
 
 ## The Name & Logo
 
