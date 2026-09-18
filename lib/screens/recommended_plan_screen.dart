@@ -318,7 +318,7 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
   Widget _buildTagline() {
     return Center(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(30),
@@ -328,7 +328,7 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
           'احتياجاتك جاهزة مع أُنس',
           style: GoogleFonts.amiri(
             color: AppColors.Burgundy,
-            fontSize: 15,
+            fontSize: 19,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -952,7 +952,7 @@ class _ServiceCardState extends State<_ServiceCard> {
                                 _provider.name ?? 'بدون اسم',
                                 style: GoogleFonts.amiri(
                                   color: AppColors.Burgundy,
-                                  fontSize: 17,
+                                  fontSize: 19,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -962,7 +962,7 @@ class _ServiceCardState extends State<_ServiceCard> {
                                   _subtitle,
                                   style: GoogleFonts.amiri(
                                     color: Colors.grey.shade600,
-                                    fontSize: 13,
+                                    fontSize: 15,
                                   ),
                                 ),
                               ],
@@ -977,7 +977,7 @@ class _ServiceCardState extends State<_ServiceCard> {
                               _priceText,
                               style: GoogleFonts.amiri(
                                 color: AppColors.Burgundy,
-                                fontSize: 17,
+                                fontSize: 19,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -985,7 +985,7 @@ class _ServiceCardState extends State<_ServiceCard> {
                               'ريال',
                               style: GoogleFonts.amiri(
                                 color: Colors.grey.shade500,
-                                fontSize: 12,
+                                fontSize: 13,
                               ),
                             ),
                           ],
@@ -1005,17 +1005,20 @@ class _ServiceCardState extends State<_ServiceCard> {
                           onPressed:
                               _hasAlternate ? _showNextAlternative : null,
                           style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             foregroundColor: AppColors.Burgundy,
                             disabledForegroundColor: Colors.grey.shade400,
                           ),
-                          icon: const Icon(Icons.swap_horiz, size: 18),
+                          icon: const Icon(Icons.swap_horiz, size: 22),
                           label: Text(
                             'البديل',
                             style: GoogleFonts.amiri(
-                              fontSize: 13,
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),

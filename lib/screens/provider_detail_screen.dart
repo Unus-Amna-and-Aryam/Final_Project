@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:final_project/constants/app_colors.dart';
 import 'package:final_project/models/providers_model.dart';
+import 'package:final_project/widgets/app_header.dart';
 
 /// Full details for one service provider, as stored in the `providers`
 /// table (see [ProvidersDatabaseService]). Reached by tapping a service
@@ -38,31 +39,41 @@ class ProviderDetailScreen extends StatelessWidget {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppColors.Beige,
-        appBar: AppBar(
-          backgroundColor: AppColors.Burgundy,
-          iconTheme: IconThemeData(color: AppColors.Beige),
-          title: Text(
-            provider.name ?? 'تفاصيل الخدمة',
-            style: GoogleFonts.amiri(
-              color: AppColors.Beige,
-              fontWeight: FontWeight.bold,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                AppHeader(
+                  title: provider.name ?? 'تفاصيل الخدمة',
+                  onBack: () => Navigator.of(context).pop(),
+                ),
+                const SizedBox(height: 18),
+                Expanded(
+                  child: rows.isEmpty
+                      ? Center(
+                          child: Text(
+                            'لا تتوفر تفاصيل إضافية لهذه الخدمة',
+                            style: GoogleFonts.amiri(
+                              color: Colors.grey.shade600,
+                              fontSize: 16,
+                            ),
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.only(bottom: 20),
+                          itemCount: rows.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 14),
+                          itemBuilder: (context, index) =>
+                              _DetailRow(data: rows[index]),
+                        ),
+                ),
+              ],
             ),
           ),
-          centerTitle: true,
         ),
-        body: rows.isEmpty
-            ? Center(
-                child: Text(
-                  'لا تتوفر تفاصيل إضافية لهذه الخدمة',
-                  style: GoogleFonts.amiri(color: Colors.grey.shade600),
-                ),
-              )
-            : ListView.separated(
-                padding: const EdgeInsets.all(20),
-                itemCount: rows.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
-                itemBuilder: (context, index) => _DetailRow(data: rows[index]),
-              ),
       ),
     );
   }
@@ -107,10 +118,10 @@ class _DetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final content = Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
@@ -130,17 +141,17 @@ class _DetailRow extends StatelessWidget {
                   data.label,
                   style: GoogleFonts.amiri(
                     color: Colors.grey.shade600,
-                    fontSize: 12,
+                    fontSize: 15,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   data.value,
                   maxLines: data.isLink ? 1 : null,
                   overflow: data.isLink ? TextOverflow.ellipsis : null,
                   style: GoogleFonts.amiri(
                     color: data.isLink ? AppColors.Gold : AppColors.Burgundy,
-                    fontSize: 15,
+                    fontSize: 19,
                     fontWeight: FontWeight.bold,
                     decoration:
                         data.isLink ? TextDecoration.underline : null,
@@ -151,7 +162,7 @@ class _DetailRow extends StatelessWidget {
           ),
           if (data.isLink) ...[
             const SizedBox(width: 8),
-            Icon(Icons.open_in_new, size: 18, color: AppColors.Burgundy),
+            Icon(Icons.open_in_new, size: 22, color: AppColors.Burgundy),
           ],
         ],
       ),
@@ -163,7 +174,7 @@ class _DetailRow extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _openLink(context),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         child: content,
       ),
     );

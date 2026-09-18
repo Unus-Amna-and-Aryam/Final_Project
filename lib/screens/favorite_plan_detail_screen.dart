@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:final_project/constants/app_colors.dart';
 import 'package:final_project/models/favorite_plan.dart';
 import 'package:final_project/models/providers_model.dart';
+import 'package:final_project/widgets/app_header.dart';
 
 /// Full details for one saved favorite plan (see [FavoritesScreen] and
 /// [FavoritePlan]) — the event name, guest count, budget, and every
@@ -19,42 +21,39 @@ class FavoritePlanDetailScreen extends StatelessWidget {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppColors.Beige,
-        appBar: AppBar(
-          backgroundColor: AppColors.Burgundy,
-          iconTheme: IconThemeData(color: AppColors.Beige),
-          title: Text(
-            plan.eventType.isNotEmpty ? plan.eventType : 'تفاصيل الخطة',
-            style: GoogleFonts.amiri(
-              color: AppColors.Beige,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          centerTitle: true,
-        ),
-        body: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            _buildSummaryCard(),
-            const SizedBox(height: 24),
-            Text(
-              'المزودون المحفوظون',
-              style: GoogleFonts.amiri(
-                color: AppColors.Burgundy,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              AppHeader(
+                title: plan.eventType.isNotEmpty ? plan.eventType : 'تفاصيل الخطة',
+                onBack: () => Navigator.of(context).pop(),
               ),
-            ),
-            const SizedBox(height: 12),
-            if (plan.providers.isEmpty)
+              const SizedBox(height: 18),
+              _buildSummaryCard(),
+              const SizedBox(height: 24),
               Text(
-                'لا يوجد مزودون محفوظون بهذه الخطة',
-                style:
-                    GoogleFonts.amiri(color: Colors.grey.shade600, fontSize: 13),
-              )
-            else
-              for (final provider in plan.providers)
-                _PlanProviderCard(provider: provider),
-          ],
+                'المزودون المحفوظون',
+                style: GoogleFonts.amiri(
+                  color: AppColors.Burgundy,
+                  fontSize: 21,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (plan.providers.isEmpty)
+                Text(
+                  'لا يوجد مزودون محفوظون بهذه الخطة',
+                  style: GoogleFonts.amiri(
+                    color: Colors.grey.shade600,
+                    fontSize: 16,
+                  ),
+                )
+              else
+                for (final provider in plan.providers)
+                  _PlanProviderCard(provider: provider),
+            ],
+          ),
         ),
       ),
     );
@@ -109,15 +108,15 @@ class _SummaryStat extends StatelessWidget {
           label,
           style: GoogleFonts.amiri(
             color: AppColors.Beige.withValues(alpha: 0.75),
-            fontSize: 12,
+            fontSize: 14,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         Text(
           value,
           style: GoogleFonts.amiri(
             color: AppColors.Beige,
-            fontSize: 16,
+            fontSize: 19,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -145,21 +144,21 @@ class _PlanProviderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final contactRows = <MapEntry<String, String>>[
+    final contactRows = <_ContactRow>[
       if (provider.phoneNumber != null && provider.phoneNumber!.isNotEmpty)
-        MapEntry('رقم الجوال', provider.phoneNumber!),
+        _ContactRow('رقم الجوال', provider.phoneNumber!),
       if (provider.socialAccount != null && provider.socialAccount!.isNotEmpty)
-        MapEntry('الحساب الاجتماعي', provider.socialAccount!),
+        _ContactRow('الحساب الاجتماعي', provider.socialAccount!, isLink: true),
       if (provider.locationLink != null && provider.locationLink!.isNotEmpty)
-        MapEntry('الموقع', provider.locationLink!),
+        _ContactRow('الموقع', provider.locationLink!, isLink: true),
     ];
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
@@ -174,15 +173,16 @@ class _PlanProviderCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 52,
+                height: 52,
+                clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
                   color: AppColors.Beige,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.diamond, color: AppColors.Gold, size: 20),
+                child: Image.asset('assets/images/logo.png', fit: BoxFit.cover),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,7 +191,7 @@ class _PlanProviderCard extends StatelessWidget {
                       provider.name ?? 'بدون اسم',
                       style: GoogleFonts.amiri(
                         color: AppColors.Burgundy,
-                        fontSize: 15,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -201,7 +201,7 @@ class _PlanProviderCard extends StatelessWidget {
                         _subtitle,
                         style: GoogleFonts.amiri(
                           color: Colors.grey.shade600,
-                          fontSize: 12,
+                          fontSize: 14,
                         ),
                       ),
                     ],
@@ -213,44 +213,90 @@ class _PlanProviderCard extends StatelessWidget {
                 _priceText,
                 style: GoogleFonts.amiri(
                   color: AppColors.Burgundy,
-                  fontSize: 15,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
           if (contactRows.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Divider(color: Colors.grey.shade100, height: 1),
-            const SizedBox(height: 8),
-            for (final row in contactRows)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Row(
-                  children: [
-                    Text(
-                      '${row.key}: ',
-                      style: GoogleFonts.amiri(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        row.value,
-                        style: GoogleFonts.amiri(
-                          color: AppColors.Burgundy,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            const SizedBox(height: 10),
+            for (final row in contactRows) _ContactRowTile(row: row),
           ],
         ],
       ),
+    );
+  }
+}
+
+class _ContactRow {
+  final String label;
+  final String value;
+  final bool isLink;
+
+  const _ContactRow(this.label, this.value, {this.isLink = false});
+}
+
+/// One contact row inside [_PlanProviderCard] — link rows (social account,
+/// location) open in the browser/maps app when tapped, same as
+/// ProviderDetailScreen's own detail rows; the phone number stays
+/// plain text.
+class _ContactRowTile extends StatelessWidget {
+  final _ContactRow row;
+
+  const _ContactRowTile({required this.row});
+
+  Future<void> _openLink(BuildContext context) async {
+    final uri = Uri.tryParse(row.value);
+    final opened = uri != null &&
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تعذّر فتح الرابط', style: GoogleFonts.amiri()),
+          backgroundColor: AppColors.Burgundy,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final content = Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Text(
+            '${row.label}: ',
+            style: GoogleFonts.amiri(color: Colors.grey.shade600, fontSize: 15),
+          ),
+          Expanded(
+            child: Text(
+              row.value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.amiri(
+                color: row.isLink ? AppColors.Gold : AppColors.Burgundy,
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                decoration: row.isLink ? TextDecoration.underline : null,
+              ),
+            ),
+          ),
+          if (row.isLink) ...[
+            const SizedBox(width: 6),
+            Icon(Icons.open_in_new, size: 16, color: AppColors.Burgundy),
+          ],
+        ],
+      ),
+    );
+
+    if (!row.isLink) return content;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(onTap: () => _openLink(context), child: content),
     );
   }
 }

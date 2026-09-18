@@ -45,7 +45,14 @@ class _AuthScreenState extends State<CreatAcountScreen> {
     super.dispose();
   }
 
-  void _skipToOnboarding() {
+  Future<void> _skipToOnboarding() async {
+    // "تخطي الآن" only skips the sign-in form — it doesn't clear an
+    // existing Supabase session. Without this, a device that was ever
+    // really signed in (even in an earlier test) stays signed in through
+    // "skip", so screens gated on being signed in (SignInRequiredView)
+    // never actually show for the guest flow this button is meant for.
+    await Supabase.instance.client.auth.signOut();
+    if (!mounted) return;
     startOnboardingFlow(context);
   }
 // 1. ضعي الدالة هنا 👇 داخل الـ State

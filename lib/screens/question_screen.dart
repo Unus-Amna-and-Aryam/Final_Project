@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:final_project/constants/app_colors.dart';
 import 'package:final_project/models/onboarding_answers.dart';
 import 'package:final_project/models/questions_model.dart';
+import 'package:final_project/screens/create_acount_screen.dart';
 import 'package:final_project/screens/recommended_plan_screen.dart';
 
 /// Pushes the onboarding question flow starting at the first question in
@@ -134,33 +135,143 @@ QuestionModel _needsQuestion({String? eventTypeId, String? locationId}) {
 /// RecommendedPlanScreen with `pushReplacement`, which drops question 5's
 /// own route from the stack — there's nothing left there to pop back to.
 void pushNeedsQuestion(BuildContext context, OnboardingAnswers answers) {
-  Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (context) => QuestionScreen(
-        question: _needsQuestion(
+  _pushRevisedQuestion(context, onboardingQuestions.length - 1, answers);
+}
+
+// Re-opens onboardingQuestions[index] pre-filled with [answers]'s current
+// value for that question — this is the "revise an earlier answer" detour
+// off the needs page (reached via [pushNeedsQuestion]), not the original
+// onboarding flow ([_pushQuestion]/[startOnboardingFlow]), which already
+// gets correct back-arrow behavior for free from the Navigator stack it
+// builds. Its own back arrow steps to index-1 (or opens CreatAcountScreen
+// before index 0, i.e. "تسجيل الدخول"); proceeding forward pops this
+// route off and swaps whatever question is beneath it (index-1's own
+// pushed copy, or nothing on the very first step) for a fresh one built
+// from the just-revised answer — so repeatedly stepping back and forward
+// through this detour never piles up stale routes.
+void _pushRevisedQuestion(
+  BuildContext context,
+  int index,
+  OnboardingAnswers answers, {
+  bool replace = false,
+}) {
+  final isLast = index == onboardingQuestions.length - 1;
+  final question = isLast
+      ? _needsQuestion(
           eventTypeId: answers.eventTypeId,
           locationId: answers.locationId,
-        ),
-        initialSelectedIds: answers.selectedNeedsIds.toSet(),
-        onNext: (selectedIds) {
+        )
+      : onboardingQuestions[index];
+
+  final initialSelectedIds = switch (question.id) {
+    'event_type' =>
+      answers.eventTypeId != null ? {answers.eventTypeId!} : <String>{},
+    'location' =>
+      answers.locationId != null ? {answers.locationId!} : <String>{},
+    'guests_count' => {answers.guestCount.toString()},
+    'budget' => {answers.budget.toInt().toString()},
+    'needs' => answers.selectedNeedsIds.toSet(),
+    _ => <String>{},
+  };
+
+  final route = MaterialPageRoute(
+    builder: (context) => QuestionScreen(
+      question: question,
+      initialSelectedIds: initialSelectedIds,
+      onBack: index == 0
+          ? () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const CreatAcountScreen(),
+                ),
+              )
+          : () => _pushRevisedQuestion(context, index - 1, answers),
+      onNext: (selectedIds) {
+        final updatedAnswers = _applyAnswer(question, selectedIds, answers);
+        if (isLast) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
-              builder: (context) => RecommendedPlanScreen(
-                answers: OnboardingAnswers(
-                  eventType: answers.eventType,
-                  eventTypeId: answers.eventTypeId,
-                  locationId: answers.locationId,
-                  guestCount: answers.guestCount,
-                  budget: answers.budget,
-                  selectedNeedsIds: selectedIds,
-                ),
-              ),
+              builder: (context) =>
+                  RecommendedPlanScreen(answers: updatedAnswers),
             ),
           );
-        },
-      ),
+        } else {
+          Navigator.of(context).pop();
+          _pushRevisedQuestion(context, index + 1, updatedAnswers, replace: true);
+        }
+      },
     ),
   );
+  if (replace) {
+    Navigator.of(context).pushReplacement(route);
+  } else {
+    Navigator.of(context).push(route);
+  }
+}
+
+// [question]'s selection folded into [answers] — the same per-question
+// update logic [_pushQuestion] inlines for the original forward flow,
+// factored out here since [_pushRevisedQuestion] needs it at every step
+// rather than just once.
+OnboardingAnswers _applyAnswer(
+  QuestionModel question,
+  List<String> selectedIds,
+  OnboardingAnswers answers,
+) {
+  switch (question.id) {
+    case 'event_type':
+      final nextEventTypeId =
+          selectedIds.isNotEmpty ? selectedIds.first : answers.eventTypeId;
+      final nextEventType = selectedIds.isNotEmpty
+          ? question.options
+              .firstWhere((option) => option.id == selectedIds.first)
+              .title
+          : answers.eventType;
+      return OnboardingAnswers(
+        eventType: nextEventType,
+        eventTypeId: nextEventTypeId,
+        locationId: answers.locationId,
+        guestCount: answers.guestCount,
+        budget: answers.budget,
+        selectedNeedsIds: answers.selectedNeedsIds,
+      );
+    case 'location':
+      return OnboardingAnswers(
+        eventType: answers.eventType,
+        eventTypeId: answers.eventTypeId,
+        locationId:
+            selectedIds.isNotEmpty ? selectedIds.first : answers.locationId,
+        guestCount: answers.guestCount,
+        budget: answers.budget,
+        selectedNeedsIds: answers.selectedNeedsIds,
+      );
+    case 'guests_count':
+      return OnboardingAnswers(
+        eventType: answers.eventType,
+        eventTypeId: answers.eventTypeId,
+        locationId: answers.locationId,
+        guestCount: int.parse(selectedIds.first),
+        budget: answers.budget,
+        selectedNeedsIds: answers.selectedNeedsIds,
+      );
+    case 'budget':
+      return OnboardingAnswers(
+        eventType: answers.eventType,
+        eventTypeId: answers.eventTypeId,
+        locationId: answers.locationId,
+        guestCount: answers.guestCount,
+        budget: double.parse(selectedIds.first),
+        selectedNeedsIds: answers.selectedNeedsIds,
+      );
+    default: // 'needs'
+      return OnboardingAnswers(
+        eventType: answers.eventType,
+        eventTypeId: answers.eventTypeId,
+        locationId: answers.locationId,
+        guestCount: answers.guestCount,
+        budget: answers.budget,
+        selectedNeedsIds: selectedIds,
+      );
+  }
 }
 
 /// One onboarding question page: progress header, a grid/list/wrap of
@@ -173,12 +284,18 @@ class QuestionScreen extends StatefulWidget {
   // pushNeedsQuestion to reopen this question with the answers it already
   // collected, instead of always starting from the question's own defaults.
   final Set<String>? initialSelectedIds;
+  // Overrides the back arrow's default Navigator.maybePop() — used by the
+  // needs page (see _pushNeedsQuestionScreen) to revise the budget instead
+  // of just popping back to wherever this screen happened to be pushed
+  // from.
+  final VoidCallback? onBack;
 
   const QuestionScreen({
     super.key,
     required this.question,
     required this.onNext,
     this.initialSelectedIds,
+    this.onBack,
   });
 
   @override
@@ -272,7 +389,8 @@ class _QuestionScreenState extends State<QuestionScreen> {
                             padding: EdgeInsets.zero,
                             icon: const BackButtonIcon(),
                             color: AppColors.Burgundy,
-                            onPressed: () => Navigator.of(context).maybePop(),
+                            onPressed: widget.onBack ??
+                                () => Navigator.of(context).maybePop(),
                           ),
                         ),
                       ],

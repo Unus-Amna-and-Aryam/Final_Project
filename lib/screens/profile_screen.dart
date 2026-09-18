@@ -14,6 +14,8 @@ import 'package:final_project/screens/favorites_screen.dart';
 import 'package:final_project/screens/my_info_screen.dart';
 import 'package:final_project/screens/recommended_plan_screen.dart';
 import 'package:final_project/widgets/app_bottom_nav_bar.dart';
+import 'package:final_project/widgets/app_header.dart';
+import 'package:final_project/widgets/sign_in_required_view.dart';
 
 /// The profile screen, reached from the bottom nav bar: a profile circle
 /// with the locally-saved display name (see [profileDisplayNameKey] in
@@ -88,9 +90,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _openMyInfo(BuildContext context) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const MyInfoScreen()),
-    );
+    await Navigator.of(context)
+        .push(MaterialPageRoute(builder: (context) => const MyInfoScreen()));
     // The name may have just been added/edited on MyInfoScreen — reload it
     // so it shows immediately under the profile circle on return.
     _loadProfile();
@@ -120,10 +121,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             answers: OnboardingSession.current ?? const OnboardingAnswers(),
           )
         : const FavoritesScreen();
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => screen),
-    );
+    Navigator.of(context)
+        .pushReplacement(MaterialPageRoute(builder: (context) => screen));
   }
+
+  bool get _isSignedIn => Supabase.instance.client.auth.currentUser != null;
 
   @override
   Widget build(BuildContext context) {
@@ -131,65 +133,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppColors.Beige,
-        appBar: AppBar(
-          backgroundColor: AppColors.Burgundy,
-          // Same reasoning as FavoritesScreen's AppBar: matches the
-          // back-arrow's color to the title's Beige.
-          iconTheme: IconThemeData(color: AppColors.Beige),
-          title: Text(
-            'أُنس',
-            style: GoogleFonts.amiri(
-              color: AppColors.Beige,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          centerTitle: true,
-        ),
         body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 8),
-                _buildProfileCircle(),
-                const SizedBox(height: 12),
-                Text(
-                  _displayName?.isNotEmpty == true
-                      ? _displayName!
-                      : 'مستخدم أُنس',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.amiri(
-                    color: AppColors.Burgundy,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+          child: !_isSignedIn
+              ? Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const AppHeader(title: 'الملف الشخصي', fontSize: 28),
+                      const Expanded(child: SignInRequiredView()),
+                    ],
+                  ),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // No onBack — this tab's root is only ever reached via
+                      // pushReplacement (see AppBottomNavBar), so there's never a
+                      // route to pop back to.
+                      const AppHeader(title: 'الملف الشخصي', fontSize: 28),
+                      const SizedBox(height: 18),
+                      _buildProfileCircle(),
+                      const SizedBox(height: 12),
+                      Text(
+                        _displayName?.isNotEmpty == true
+                            ? _displayName!
+                            : 'مستخدم أُنس',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.amiri(
+                          color: AppColors.Burgundy,
+                          fontSize: 21,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      _ProfileMenuCard(
+                        title: 'معلوماتي',
+                        onTap: () => _openMyInfo(context),
+                      ),
+                      const SizedBox(height: 14),
+                      _ProfileMenuCard(
+                        title: 'من نحن',
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const AboutUsScreen(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      _buildWhereWeAreCard(),
+                      const SizedBox(height: 14),
+                      _ProfileMenuCard(
+                        title: 'تسجيل الخروج',
+                        icon: Icons.logout,
+                        color: Colors.red.shade700,
+                        onTap: () => _signOut(context),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 28),
-                _ProfileMenuCard(
-                  title: 'معلوماتي',
-                  onTap: () => _openMyInfo(context),
-                ),
-                const SizedBox(height: 14),
-                _ProfileMenuCard(
-                  title: 'من نحن',
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const AboutUsScreen()),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                _buildWhereWeAreCard(),
-                const SizedBox(height: 14),
-                _ProfileMenuCard(
-                  title: 'تسجيل الخروج',
-                  icon: Icons.logout,
-                  color: Colors.red.shade700,
-                  onTap: () => _signOut(context),
-                ),
-              ],
-            ),
-          ),
         ),
         bottomNavigationBar: AppBottomNavBar(
           selected: BottomNavItem.profile,
@@ -246,7 +250,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   border: Border.all(color: AppColors.white, width: 2),
                 ),
                 alignment: Alignment.center,
-                child: Icon(Icons.camera_alt, size: 14, color: AppColors.Burgundy),
+                child: Icon(
+                  Icons.camera_alt,
+                  size: 14,
+                  color: AppColors.Burgundy,
+                ),
               ),
             ),
           ],
@@ -283,7 +291,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     'أين نحن؟',
                     style: GoogleFonts.amiri(
                       color: AppColors.Burgundy,
-                      fontSize: 16,
+                      fontSize: 19,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -378,13 +386,13 @@ class _ProfileMenuCard extends StatelessWidget {
                 title,
                 style: GoogleFonts.amiri(
                   color: resolvedColor,
-                  fontSize: 16,
+                  fontSize: 19,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Icon(
                 icon,
-                size: icon == Icons.arrow_forward_ios ? 16 : 20,
+                size: icon == Icons.arrow_forward_ios ? 18 : 23,
                 color: resolvedColor,
               ),
             ],
@@ -425,7 +433,8 @@ class _CityCard extends StatelessWidget {
         fit: StackFit.expand,
         children: [
           Image.asset(imagePath, fit: BoxFit.cover),
-          if (comingSoon) Container(color: Colors.black.withValues(alpha: 0.45)),
+          if (comingSoon)
+            Container(color: Colors.black.withValues(alpha: 0.45)),
           Positioned(
             top: 10,
             right: 14,

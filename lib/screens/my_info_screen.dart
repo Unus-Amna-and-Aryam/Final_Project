@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:final_project/constants/app_colors.dart';
+import 'package:final_project/widgets/app_header.dart';
 
 /// SharedPreferences key the display name is saved under — read back by
 /// ProfileScreen to show under the profile circle. There is currently no
@@ -92,18 +93,6 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: AppColors.Beige,
-        appBar: AppBar(
-          backgroundColor: AppColors.Burgundy,
-          iconTheme: IconThemeData(color: AppColors.Beige),
-          title: Text(
-            'معلوماتي',
-            style: GoogleFonts.amiri(
-              color: AppColors.Beige,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          centerTitle: true,
-        ),
         body: _loading
             ? const Center(child: CircularProgressIndicator())
             : SafeArea(
@@ -112,13 +101,19 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      AppHeader(
+                        title: 'معلوماتي',
+                        fontSize: 28,
+                        onBack: () => Navigator.of(context).pop(),
+                      ),
+                      const SizedBox(height: 18),
                       _buildFieldLabel('البريد الإلكتروني'),
                       const SizedBox(height: 8),
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 14,
+                          horizontal: 18,
+                          vertical: 18,
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.white,
@@ -131,7 +126,7 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
                             color: _currentEmail != null
                                 ? AppColors.Burgundy
                                 : Colors.grey.shade500,
-                            fontSize: 15,
+                            fontSize: 21,
                           ),
                         ),
                       ),
@@ -143,19 +138,19 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
                         textAlign: TextAlign.right,
                         style: GoogleFonts.amiri(
                           color: AppColors.Burgundy,
-                          fontSize: 15,
+                          fontSize: 21,
                         ),
                         decoration: InputDecoration(
                           hintText: 'أدخل اسمك',
                           hintStyle: GoogleFonts.amiri(
                             color: Colors.grey.shade400,
-                            fontSize: 15,
+                            fontSize: 21,
                           ),
                           filled: true,
                           fillColor: AppColors.white,
                           contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
+                            horizontal: 18,
+                            vertical: 18,
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
@@ -170,7 +165,7 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
                       ),
                       const SizedBox(height: 28),
                       SizedBox(
-                        height: 48,
+                        height: 52,
                         child: ElevatedButton(
                           onPressed: _saving ? null : _save,
                           style: ElevatedButton.styleFrom(
@@ -181,8 +176,8 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
                           ),
                           child: _saving
                               ? SizedBox(
-                                  width: 20,
-                                  height: 20,
+                                  width: 22,
+                                  height: 22,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                     color: AppColors.Beige,
@@ -192,7 +187,7 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
                                   'حفظ',
                                   style: GoogleFonts.amiri(
                                     color: AppColors.Beige,
-                                    fontSize: 16,
+                                    fontSize: 22,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -211,7 +206,7 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
       label,
       style: GoogleFonts.amiri(
         color: AppColors.Burgundy,
-        fontSize: 14,
+        fontSize: 20,
         fontWeight: FontWeight.bold,
       ),
     );
