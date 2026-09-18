@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:final_project/constants/app_colors.dart';
@@ -25,18 +29,62 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   String? _displayName;
+  Uint8List? _imageBytes;
   bool _whereExpanded = false;
 
   @override
   void initState() {
     super.initState();
-    _loadDisplayName();
+    _loadProfile();
   }
 
-  Future<void> _loadDisplayName() async {
+  Future<void> _loadProfile() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
-    setState(() => _displayName = prefs.getString(profileDisplayNameKey));
+    final storedImage = prefs.getString(profileImageKey);
+    setState(() {
+      _displayName = prefs.getString(profileDisplayNameKey);
+      _imageBytes = storedImage == null ? null : base64Decode(storedImage);
+    });
+  }
+
+  // Reads the picked file as raw bytes (via XFile, not dart:io/path_provider)
+  // and stores it base64-encoded in SharedPreferences — the only approach
+  // that works identically on every target this app builds for, including
+  // a future Flutter Web build: there's no real filesystem to save a path
+  // into on web, but bytes + Image.memory work everywhere.
+  Future<void> _pickProfileImage() async {
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        // Keeps the base64 string (and so the SharedPreferences entry)
+        // reasonably sized — this is a thumbnail for a 96x96 circle, not a
+        // full-resolution photo.
+        maxWidth: 600,
+        maxHeight: 600,
+      );
+      if (picked == null) return;
+
+      final bytes = await picked.readAsBytes();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(profileImageKey, base64Encode(bytes));
+
+      if (!mounted) return;
+      setState(() => _imageBytes = bytes);
+    } catch (e) {
+      // Surfaced instead of left silent — a bare await failing here
+      // (e.g. a plugin not yet registered after a hot reload instead of a
+      // full restart) would otherwise look exactly like the circle not
+      // responding to taps at all.
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تعذّر اختيار الصورة: $e', style: GoogleFonts.amiri()),
+          backgroundColor: AppColors.Burgundy,
+        ),
+      );
+    }
   }
 
   Future<void> _openMyInfo(BuildContext context) async {
@@ -45,7 +93,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
     // The name may have just been added/edited on MyInfoScreen — reload it
     // so it shows immediately under the profile circle on return.
-    _loadDisplayName();
+    _loadProfile();
   }
 
   Future<void> _signOut(BuildContext context) async {
@@ -153,23 +201,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildProfileCircle() {
     return Center(
-      child: Container(
-        width: 96,
-        height: 96,
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          shape: BoxShape.circle,
-          border: Border.all(color: AppColors.Gold, width: 2.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _pickProfileImage,
+        child: Stack(
+          children: [
+            Container(
+              width: 96,
+              height: 96,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.Gold, width: 2.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              alignment: Alignment.center,
+              child: _imageBytes != null
+                  ? Image.memory(
+                      _imageBytes!,
+                      width: 96,
+                      height: 96,
+                      fit: BoxFit.cover,
+                    )
+                  : Icon(Icons.person, size: 56, color: AppColors.Burgundy),
+            ),
+            // Small camera badge signaling the circle is tappable to
+            // add/change the picture.
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: AppColors.Gold,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.white, width: 2),
+                ),
+                alignment: Alignment.center,
+                child: Icon(Icons.camera_alt, size: 14, color: AppColors.Burgundy),
+              ),
             ),
           ],
         ),
-        alignment: Alignment.center,
-        child: Icon(Icons.person, size: 56, color: AppColors.Burgundy),
       ),
     );
   }

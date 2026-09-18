@@ -13,6 +13,16 @@ import 'package:final_project/constants/app_colors.dart';
 /// user to another device or survive a reinstall/skip-login flow.
 const String profileDisplayNameKey = 'profile_display_name';
 
+/// SharedPreferences key the local profile picture is saved under, as a
+/// base64-encoded string — read back by ProfileScreen to show in the
+/// profile circle. Same local-only reasoning and limitations as
+/// [profileDisplayNameKey]: no `users`/`profiles` table exists yet to
+/// attach a picture to the signed-in account. Stored as bytes rather than
+/// a file path (see ProfileScreen._pickProfileImage) so it works the same
+/// way on every build target, including a future Flutter Web build, which
+/// has no real filesystem to save a path into.
+const String profileImageKey = 'profile_image_base64';
+
 /// "معلوماتي": shows the current signed-in Supabase user's email
 /// (read-only) and lets the user set/edit the local display name shown on
 /// [ProfileScreen] (see [profileDisplayNameKey]).

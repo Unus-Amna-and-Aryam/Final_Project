@@ -898,137 +898,162 @@ class _ServiceCardState extends State<_ServiceCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => widget.onOpenDetail(_provider),
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.Beige,
-                      shape: BoxShape.circle,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Stack(
+        // Lets the favorite heart poke slightly outside the card's own
+        // bounds at the top-left corner, instead of being cut off there.
+        clipBehavior: Clip.none,
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => widget.onOpenDetail(_provider),
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                // Extra top padding clears space under the floating heart
+                // badge so it doesn't crowd the price text next to it.
+                padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
                     ),
-                    child:
-                        Icon(Icons.diamond, color: AppColors.Gold, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
                       children: [
-                        Text(
-                          _provider.name ?? 'بدون اسم',
-                          style: GoogleFonts.amiri(
-                            color: AppColors.Burgundy,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
+                        Container(
+                          width: 52,
+                          height: 52,
+                          clipBehavior: Clip.antiAlias,
+                          decoration: BoxDecoration(
+                            color: AppColors.Beige,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.cover,
                           ),
                         ),
-                        if (_subtitle.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            _subtitle,
-                            style: GoogleFonts.amiri(
-                              color: Colors.grey.shade600,
-                              fontSize: 12,
-                            ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _provider.name ?? 'بدون اسم',
+                                style: GoogleFonts.amiri(
+                                  color: AppColors.Burgundy,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              if (_subtitle.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  _subtitle,
+                                  style: GoogleFonts.amiri(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                        ],
+                        ),
+                        const SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              _priceText,
+                              style: GoogleFonts.amiri(
+                                color: AppColors.Burgundy,
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'ريال',
+                              style: GoogleFonts.amiri(
+                                color: Colors.grey.shade500,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        _priceText,
-                        style: GoogleFonts.amiri(
-                          color: AppColors.Burgundy,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
+                    const SizedBox(height: 14),
+                    Divider(color: Colors.grey.shade100, height: 1),
+                    const SizedBox(height: 10),
+                    // "البديل" lands on the right under this screen's RTL
+                    // Directionality, same as every other right-led row
+                    // here — "المفضلة" moved to the floating heart at the
+                    // card's top-left corner instead of living in this row.
+                    Row(
+                      children: [
+                        TextButton.icon(
+                          onPressed:
+                              _hasAlternate ? _showNextAlternative : null,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            foregroundColor: AppColors.Burgundy,
+                            disabledForegroundColor: Colors.grey.shade400,
+                          ),
+                          icon: const Icon(Icons.swap_horiz, size: 18),
+                          label: Text(
+                            'البديل',
+                            style: GoogleFonts.amiri(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ),
-                      Text(
-                        'ريال',
-                        style: GoogleFonts.amiri(
-                          color: Colors.grey.shade500,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 10),
-              Divider(color: Colors.grey.shade100, height: 1),
-              const SizedBox(height: 8),
-              // "البديل" on the right, "المفضلة" on the left — the first
-              // child in a Row lands on the right under this screen's RTL
-              // Directionality, same as every other right-led row here.
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton.icon(
-                    onPressed: _hasAlternate ? _showNextAlternative : null,
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      foregroundColor: AppColors.Burgundy,
-                      disabledForegroundColor: Colors.grey.shade400,
-                    ),
-                    icon: const Icon(Icons.swap_horiz, size: 16),
-                    label: Text(
-                      'البديل',
-                      style: GoogleFonts.amiri(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: _addToFavorites,
-                    child: Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: AppColors.Gold,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.favorite,
-                        color: AppColors.Burgundy,
-                        size: 14,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
-        ),
+          // Offset by less than its own radius (not centered exactly on
+          // the corner), so only a small sliver sits outside the card —
+          // most of the badge overlaps the card itself.
+          Positioned(
+            top: -8,
+            left: -8,
+            child: GestureDetector(
+              onTap: _addToFavorites,
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.Gold,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.12),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(Icons.favorite, color: AppColors.Burgundy, size: 17),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
