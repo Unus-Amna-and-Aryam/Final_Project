@@ -51,15 +51,9 @@ class _GuestsScreenState extends State<GuestsScreen> {
     setState(() => _guests.removeAt(index));
   }
 
-  Future<void> _sendInvite(_Guest guest) async {
-    final caption =
-        'دعوة: ${widget.cardTitle}\n'
-        '${widget.cardDescription}\n\n'
-        'إلى الحبيب/ة ${guest.name}، يسعدنا حضورك 🌸';
-
+  Future<void> _sendInvite() async {
     await SharePlus.instance.share(
       ShareParams(
-        text: caption,
         files: [
           XFile.fromData(
             widget.cardImageBytes,
@@ -208,7 +202,7 @@ class _GuestsScreenState extends State<GuestsScreen> {
             ),
           ),
           IconButton(
-            onPressed: () => _sendInvite(guest),
+            onPressed: _sendInvite,
             icon: const Icon(Icons.send, color: Colors.green),
             tooltip: 'مشاركة البطاقة',
           ),
