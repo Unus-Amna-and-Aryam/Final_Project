@@ -70,6 +70,13 @@ class _HelloScreenState extends State<HelloScreen>
       ..initialize().then((_) {
         if (!mounted) return;
         setState(() {});
+        // Browsers refuse to autoplay a video with sound before the user
+        // has interacted with the page — this splash video plays the
+        // instant the page loads, so on web that autoplay call was
+        // silently rejected and the video just never started. Muting
+        // first (fine here: it's a silent logo animation) is exactly
+        // what browser autoplay policies allow through.
+        _controller.setVolume(0);
         _controller.play(); // autoplay as soon as the video is ready
 
         // Only reveal the name and phrase once the logo video is actually

@@ -6,6 +6,7 @@ import 'package:final_project/constants/app_colors.dart';
 import 'package:final_project/models/onboarding_answers.dart';
 import 'package:final_project/models/providers_model.dart';
 import 'package:final_project/screens/favorites_screen.dart';
+import 'package:final_project/screens/invitation_card_screen.dart';
 import 'package:final_project/screens/profile_screen.dart';
 import 'package:final_project/screens/provider_detail_screen.dart';
 import 'package:final_project/screens/question_screen.dart';
@@ -263,6 +264,8 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
                   const SizedBox(height: 10),
                   _buildBudgetWarning(),
                 ],
+                const SizedBox(height: 16),
+                _buildInvitationCardButton(context),
                 const SizedBox(height: 24),
                 _buildServicesSection(context),
                 const SizedBox(height: 8),
@@ -306,10 +309,6 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: _AiBadge(),
-          ),
         ],
       ),
     );
@@ -352,6 +351,37 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
           color: AppColors.Burgundy,
           fontSize: 16,
           fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInvitationCardButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: ElevatedButton.icon(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.Burgundy,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => InvitationCardScreen(
+              eventTypeId: widget.answers.eventTypeId ?? 'invitation',
+            ),
+          ),
+        ),
+        icon: Icon(Icons.card_giftcard, color: AppColors.Gold),
+        label: Text(
+          'تصميم بطاقة الدعوة الخاصة بمناسبتك',
+          style: GoogleFonts.amiri(
+            color: AppColors.Beige,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
@@ -492,33 +522,67 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
           cardsPerGroup[r.group] = (cardsPerGroup[r.group] ?? 0) + 1;
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildServicesHeader(recommendations.length),
-            const SizedBox(height: 12),
-            for (var i = 0; i < recommendations.length; i++)
-              _ServiceCard(
-                candidates: recommendations[i].candidates,
-                fallbackPrice: _fallbackPriceFor(
-                  recommendations[i],
-                  selectedGroups,
-                  cardsPerGroup,
-                ),
-                onOpenDetail: (provider) => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        ProviderDetailScreen(provider: provider),
+        return _buildServicesCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildServicesHeader(recommendations.length),
+              const SizedBox(height: 14),
+              // A fixed height (rather than shrink-wrapping) so this list
+              // scrolls on its own within the card instead of just adding
+              // to the whole page's length — the outer SingleChildScrollView
+              // in build() still handles the rest of the page normally.
+              SizedBox(
+                height: 420,
+                child: ListView.builder(
+                  itemCount: recommendations.length,
+                  itemBuilder: (context, i) => _ServiceCard(
+                    candidates: recommendations[i].candidates,
+                    fallbackPrice: _fallbackPriceFor(
+                      recommendations[i],
+                      selectedGroups,
+                      cardsPerGroup,
+                    ),
+                    onOpenDetail: (provider) => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ProviderDetailScreen(provider: provider),
+                      ),
+                    ),
+                    onDisplayedProviderChanged: (provider) =>
+                        _displayedPlanProviders![i] = provider,
+                    onDisplayedPriceChanged: (price) =>
+                        setState(() => _displayedCardPrices[i] = price),
                   ),
                 ),
-                onDisplayedProviderChanged: (provider) =>
-                    _displayedPlanProviders![i] = provider,
-                onDisplayedPriceChanged: (price) =>
-                    setState(() => _displayedCardPrices[i] = price),
               ),
-          ],
+            ],
+          ),
         );
       },
+    );
+  }
+
+  // Groups the recommendations header + card list (or the fallback
+  // message) inside one big card — a shade darker than the page's own
+  // Beige background, with a Burgundy border and a shadow tying the whole
+  // section together instead of each card floating separately on the page.
+  Widget _buildServicesCard({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE9DEC7),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.Burgundy, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 
@@ -560,16 +624,18 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
   }
 
   Widget _servicesFallback(String message) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildServicesHeader(0),
-        const SizedBox(height: 12),
-        Text(
-          message,
-          style: GoogleFonts.amiri(color: Colors.grey.shade600, fontSize: 13),
-        ),
-      ],
+    return _buildServicesCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildServicesHeader(0),
+          const SizedBox(height: 12),
+          Text(
+            message,
+            style: GoogleFonts.amiri(color: Colors.grey.shade600, fontSize: 13),
+          ),
+        ],
+      ),
     );
   }
 
@@ -705,35 +771,6 @@ String _formatAmount(num amount) {
     buffer.write(digits[i]);
   }
   return buffer.toString();
-}
-
-class _AiBadge extends StatelessWidget {
-  const _AiBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: 0.55,
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.grey.shade400),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          'AI',
-          style: GoogleFonts.amiri(
-            color: Colors.grey.shade600,
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _CircleIconButton extends StatelessWidget {
@@ -912,8 +949,10 @@ class _ServiceCardState extends State<_ServiceCard> {
               borderRadius: BorderRadius.circular(20),
               child: Container(
                 // Extra top padding clears space under the floating heart
-                // badge so it doesn't crowd the price text next to it.
-                padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
+                // badge (which sits at top:10, 36px tall, so its bottom
+                // edge is at y=46) so it doesn't cover the price text next
+                // to it — 30 wasn't enough and let the badge overlap it.
+                padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   borderRadius: BorderRadius.circular(20),
@@ -1030,12 +1069,13 @@ class _ServiceCardState extends State<_ServiceCard> {
               ),
             ),
           ),
-          // Offset by less than its own radius (not centered exactly on
-          // the corner), so only a small sliver sits outside the card —
-          // most of the badge overlaps the card itself.
+          // Sitting fully on the card's flat surface (not poking past the
+          // rounded corner like before) — overlapping that curve gave the
+          // badge a jagged, uneven edge where its own circular outline
+          // crossed the card's corner radius instead of a clean circle.
           Positioned(
-            top: -8,
-            left: -8,
+            top: 10,
+            left: 10,
             child: GestureDetector(
               onTap: _addToFavorites,
               child: Container(
@@ -1046,8 +1086,8 @@ class _ServiceCardState extends State<_ServiceCard> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.12),
-                      blurRadius: 4,
+                      color: Colors.black.withOpacity(0.18),
+                      blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
                   ],

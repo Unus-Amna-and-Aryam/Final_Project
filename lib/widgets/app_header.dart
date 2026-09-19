@@ -22,26 +22,33 @@ class AppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 46,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          if (onBack != null)
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: _CircleIconButton(icon: Icons.arrow_back, onTap: onBack!),
-            ),
-          Text(
+    // A Row (button — flexible title — balancing spacer) instead of a
+    // Stack centered in a fixed-height box: a long title now wraps to a
+    // second line and grows the header instead of overlapping the back
+    // button, which a fixed-width unconstrained Text centered on top of
+    // that button used to do.
+    const buttonSlotWidth = 38.0;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        onBack != null
+            ? _CircleIconButton(icon: Icons.arrow_back, onTap: onBack!)
+            : const SizedBox(width: buttonSlotWidth),
+        Expanded(
+          child: Text(
             title,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: GoogleFonts.amiri(
               color: AppColors.Burgundy,
               fontSize: fontSize,
               fontWeight: FontWeight.bold,
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: buttonSlotWidth),
+      ],
     );
   }
 }

@@ -639,7 +639,7 @@ class _QuestionScreenState extends State<QuestionScreen> {
                                 Text(
                                   item.title,
                                   style: GoogleFonts.amiri(
-                                    fontSize: 18,
+                                    fontSize: 20,
                                     color: AppColors.Burgundy,
                                   ),
                                 ),
@@ -808,7 +808,7 @@ class _OptionCard extends StatelessWidget {
             option.title,
             textAlign: TextAlign.center,
             style: GoogleFonts.amiri(
-              fontSize: 19,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
               color: isSelected ? AppColors.white : AppColors.Burgundy,
             ),
@@ -819,7 +819,7 @@ class _OptionCard extends StatelessWidget {
               option.subtitle!,
               textAlign: TextAlign.center,
               style: GoogleFonts.amiri(
-                fontSize: 14,
+                fontSize: 16,
                 color: isSelected
                     ? AppColors.white
                     : AppColors.Burgundy_White,

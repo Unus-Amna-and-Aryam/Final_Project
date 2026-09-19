@@ -136,6 +136,7 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
                       TextField(
                         controller: _nameController,
                         textAlign: TextAlign.right,
+                        textDirection: TextDirection.rtl,
                         style: GoogleFonts.amiri(
                           color: AppColors.Burgundy,
                           fontSize: 21,
