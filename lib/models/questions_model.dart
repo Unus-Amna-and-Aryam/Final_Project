@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 
-/// A single selectable card on a question page.
 class QuestionOption {
   final String id;
   final String title;
-  // Small line under the title. Omit it to show just the title.
   final String? subtitle;
   final IconData icon;
-  // Optional asset image (e.g. the logo) shown small in place of [icon].
-  // When set, this takes priority over [icon].
   final String? iconImagePath;
   final bool isDefaultSelected;
 
@@ -22,18 +18,14 @@ class QuestionOption {
   });
 }
 
-/// How a question's option cards should be arranged. Pick whichever best
-/// fits the number/length of options for that question.
 enum QuestionLayout {
-  grid2, // two columns, e.g. 4 short options
-  singleColumn, // one full-width card per row
-  wrap, // cards wrap freely, sized to their own content
-  slider, // a single discrete-step slider instead of option cards
-  expandableMultiSelect, // collapsible categories of checkable sub-items
+  grid2,
+  singleColumn,
+  wrap,
+  slider,
+  expandableMultiSelect,
 }
 
-/// A checkable sub-item inside a [QuestionCategory]. Used only by
-/// QuestionLayout.expandableMultiSelect.
 class QuestionSubItem {
   final String id;
   final String title;
@@ -46,10 +38,6 @@ class QuestionSubItem {
   });
 }
 
-/// A collapsible category header with its list of checkable sub-items.
-/// Used only by QuestionLayout.expandableMultiSelect. Expanding/collapsing
-/// a category is purely visual and never affects which sub-items (in this
-/// or any other category) are selected.
 class QuestionCategory {
   final String id;
   final String title;
@@ -62,9 +50,6 @@ class QuestionCategory {
   });
 }
 
-/// Generic data for one onboarding question page. The same [QuestionScreen]
-/// widget renders any of these. There's no subtitle field for the question
-/// itself — only the title is shown under the progress bar.
 class QuestionModel {
   final String id;
   final int step;
@@ -73,17 +58,9 @@ class QuestionModel {
   final List<QuestionOption> options;
   final bool allowMultiSelect;
   final QuestionLayout layout;
-
-  // Only used when layout is QuestionLayout.slider. [sliderSteps] are the
-  // only values the slider can land on (snaps to the nearest one), e.g.
-  // [10, 50, 100, ..., 500]. [sliderUnitLabel] is shown under the big
-  // number (e.g. "شخص"). [sliderQuickPicks] are shortcut chips for a few
-  // of those values; the chip for the last (max) step gets a "+" suffix.
   final List<int>? sliderSteps;
   final String? sliderUnitLabel;
   final List<int>? sliderQuickPicks;
-
-  // Only used when layout is QuestionLayout.expandableMultiSelect.
   final List<QuestionCategory>? categories;
 
   const QuestionModel({
@@ -101,12 +78,6 @@ class QuestionModel {
   });
 }
 
-/// The 5 onboarding question pages shown after "تخطي الآن" / "متابعة".
-///
-/// Only the first question's content is real. Questions 2-5 are
-/// placeholders — replace their title and options with the real content
-/// whenever it's ready; the screen and navigation code don't need to
-/// change when you do.
 const List<QuestionModel> onboardingQuestions = [
   QuestionModel(
     id: 'event_type',
@@ -172,13 +143,29 @@ const List<QuestionModel> onboardingQuestions = [
     layout: QuestionLayout.slider,
     options: [],
     sliderSteps: [
-      500, 1500, 2500, 3500, 4500, 5500, 6500, 7500, 8500, 9500, 10500,
-      11500, 12500, 13500, 14500, 15500, 16500, 17500, 18500, 19500, 20000,
+      500,
+      1500,
+      2500,
+      3500,
+      4500,
+      5500,
+      6500,
+      7500,
+      8500,
+      9500,
+      10500,
+      11500,
+      12500,
+      13500,
+      14500,
+      15500,
+      16500,
+      17500,
+      18500,
+      19500,
+      20000,
     ],
     sliderUnitLabel: 'ريال',
-    // 5000/10000 aren't in sliderSteps above (every step is 500 mod 1000,
-    // except the final 20000), so the nearest actual steps are used here
-    // instead — otherwise these chips would be unresponsive.
     sliderQuickPicks: [4500, 9500, 20000],
   ),
   QuestionModel(
@@ -194,8 +181,6 @@ const List<QuestionModel> onboardingQuestions = [
         id: 'venues',
         title: 'قاعات واستراحات',
         items: [
-          // Was two separate sub-items (قاعات / استراحات); merged into one
-          // that shares the category's own title.
           QuestionSubItem(id: 'venues_combined', title: 'قاعات واستراحات'),
         ],
       ),

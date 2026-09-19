@@ -2,14 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:final_project/constants/app_colors.dart';
 
-/// Same header style as RecommendedPlanScreen's own header: a centered
-/// bold title on the page's plain Beige background, with a circular white
-/// back button (when [onBack] is given) instead of a solid-color Material
-/// AppBar. Used by screens that want that same look (profile, my info,
-/// about us) rather than each building it inline.
 class AppHeader extends StatelessWidget {
   final String title;
-  // Omit for a screen with no back action (e.g. a bottom-nav tab root).
   final VoidCallback? onBack;
   final double fontSize;
 
@@ -22,11 +16,6 @@ class AppHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // A Row (button — flexible title — balancing spacer) instead of a
-    // Stack centered in a fixed-height box: a long title now wraps to a
-    // second line and grows the header instead of overlapping the back
-    // button, which a fixed-width unconstrained Text centered on top of
-    // that button used to do.
     const buttonSlotWidth = 38.0;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -41,7 +30,7 @@ class AppHeader extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.amiri(
-              color: AppColors.Burgundy,
+              color: AppColors.burgundy,
               fontSize: fontSize,
               fontWeight: FontWeight.bold,
             ),
@@ -78,7 +67,7 @@ class _CircleIconButton extends StatelessWidget {
           ],
         ),
         alignment: Alignment.center,
-        child: Icon(icon, color: AppColors.Burgundy, size: 24),
+        child: Icon(icon, color: AppColors.burgundy, size: 24),
       ),
     );
   }

@@ -9,16 +9,17 @@ class Providers {
   num? minPrice;
   num? maxPrice;
 
-  Providers(
-      {this.id,
-      this.name,
-      this.category,
-      this.subCategory,
-      this.phoneNumber,
-      this.socialAccount,
-      this.locationLink,
-      this.minPrice,
-      this.maxPrice});
+  Providers({
+    this.id,
+    this.name,
+    this.category,
+    this.subCategory,
+    this.phoneNumber,
+    this.socialAccount,
+    this.locationLink,
+    this.minPrice,
+    this.maxPrice,
+  });
 
   Providers.fromJson(Map<String, dynamic> json) {
     id = json['id'];

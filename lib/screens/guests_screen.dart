@@ -12,15 +12,6 @@ class _Guest {
   const _Guest(this.name);
 }
 
-/// Lets the user build a guest list and share the invitation — as the real
-/// card image from InvitationCardScreen, not just text — to each one.
-///
-/// There's no way to both open a specific WhatsApp contact *and* attach an
-/// image via a link (wa.me only pre-fills text for a chosen number; it has
-/// no equivalent for attaching a file). Sharing the actual image has to go
-/// through the OS share sheet instead, which means the user picks
-/// WhatsApp (or any other app) and then the contact themselves, once per
-/// guest — one extra tap, but the guest actually receives the card.
 class GuestsScreen extends StatefulWidget {
   final String cardTitle;
   final String cardDescription;
@@ -61,7 +52,8 @@ class _GuestsScreenState extends State<GuestsScreen> {
   }
 
   Future<void> _sendInvite(_Guest guest) async {
-    final caption = 'دعوة: ${widget.cardTitle}\n'
+    final caption =
+        'دعوة: ${widget.cardTitle}\n'
         '${widget.cardDescription}\n\n'
         'إلى الحبيب/ة ${guest.name}، يسعدنا حضورك 🌸';
 
@@ -84,7 +76,7 @@ class _GuestsScreenState extends State<GuestsScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: AppColors.Beige,
+        backgroundColor: AppColors.beige,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -101,7 +93,7 @@ class _GuestsScreenState extends State<GuestsScreen> {
                 Text(
                   'المدعوون (${_guests.length})',
                   style: GoogleFonts.amiri(
-                    color: AppColors.Burgundy,
+                    color: AppColors.burgundy,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -155,7 +147,7 @@ class _GuestsScreenState extends State<GuestsScreen> {
             controller: _nameController,
             textAlign: TextAlign.right,
             textDirection: TextDirection.rtl,
-            style: GoogleFonts.amiri(color: AppColors.Burgundy),
+            style: GoogleFonts.amiri(color: AppColors.burgundy),
             decoration: InputDecoration(
               hintText: 'اسم المدعو',
               hintStyle: GoogleFonts.amiri(color: Colors.grey.shade400),
@@ -169,16 +161,16 @@ class _GuestsScreenState extends State<GuestsScreen> {
             child: ElevatedButton.icon(
               onPressed: _addGuest,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.Gold,
+                backgroundColor: AppColors.gold,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              icon: Icon(Icons.add, color: AppColors.Burgundy),
+              icon: Icon(Icons.add, color: AppColors.burgundy),
               label: Text(
                 'إضافة للقائمة',
                 style: GoogleFonts.amiri(
-                  color: AppColors.Burgundy,
+                  color: AppColors.burgundy,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -209,7 +201,7 @@ class _GuestsScreenState extends State<GuestsScreen> {
             child: Text(
               guest.name,
               style: GoogleFonts.amiri(
-                color: AppColors.Burgundy,
+                color: AppColors.burgundy,
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
               ),

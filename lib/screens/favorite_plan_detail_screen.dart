@@ -6,10 +6,6 @@ import 'package:final_project/models/favorite_plan.dart';
 import 'package:final_project/models/providers_model.dart';
 import 'package:final_project/widgets/app_header.dart';
 
-/// Full details for one saved favorite plan (see [FavoritesScreen] and
-/// [FavoritePlan]) — the event name, guest count, budget, and every
-/// provider that was recommended at save time. A static snapshot, not a
-/// live recommendation: no "البديل"/"المفضلة" actions here.
 class FavoritePlanDetailScreen extends StatelessWidget {
   final FavoritePlan plan;
 
@@ -20,13 +16,15 @@ class FavoritePlanDetailScreen extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: AppColors.Beige,
+        backgroundColor: AppColors.beige,
         body: SafeArea(
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
               AppHeader(
-                title: plan.eventType.isNotEmpty ? plan.eventType : 'تفاصيل الخطة',
+                title: plan.eventType.isNotEmpty
+                    ? plan.eventType
+                    : 'تفاصيل الخطة',
                 onBack: () => Navigator.of(context).pop(),
               ),
               const SizedBox(height: 18),
@@ -35,7 +33,7 @@ class FavoritePlanDetailScreen extends StatelessWidget {
               Text(
                 'المزودون المحفوظون',
                 style: GoogleFonts.amiri(
-                  color: AppColors.Burgundy,
+                  color: AppColors.burgundy,
                   fontSize: 21,
                   fontWeight: FontWeight.bold,
                 ),
@@ -63,7 +61,7 @@ class FavoritePlanDetailScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.Burgundy,
+        color: AppColors.burgundy,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -107,7 +105,7 @@ class _SummaryStat extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.amiri(
-            color: AppColors.Beige.withValues(alpha: 0.75),
+            color: AppColors.beige.withValues(alpha: 0.75),
             fontSize: 14,
           ),
         ),
@@ -115,7 +113,7 @@ class _SummaryStat extends StatelessWidget {
         Text(
           value,
           style: GoogleFonts.amiri(
-            color: AppColors.Beige,
+            color: AppColors.beige,
             fontSize: 19,
             fontWeight: FontWeight.bold,
           ),
@@ -131,9 +129,10 @@ class _PlanProviderCard extends StatelessWidget {
   const _PlanProviderCard({required this.provider});
 
   String get _subtitle {
-    final parts = [provider.category, provider.subCategory]
-        .where((s) => s != null && s.isNotEmpty)
-        .cast<String>();
+    final parts = [
+      provider.category,
+      provider.subCategory,
+    ].where((s) => s != null && s.isNotEmpty).cast<String>();
     return parts.join(' - ');
   }
 
@@ -177,7 +176,7 @@ class _PlanProviderCard extends StatelessWidget {
                 height: 52,
                 clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
-                  color: AppColors.Beige,
+                  color: AppColors.beige,
                   shape: BoxShape.circle,
                 ),
                 child: Image.asset('assets/images/logo.png', fit: BoxFit.cover),
@@ -190,7 +189,7 @@ class _PlanProviderCard extends StatelessWidget {
                     Text(
                       provider.name ?? 'بدون اسم',
                       style: GoogleFonts.amiri(
-                        color: AppColors.Burgundy,
+                        color: AppColors.burgundy,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -212,7 +211,7 @@ class _PlanProviderCard extends StatelessWidget {
               Text(
                 _priceText,
                 style: GoogleFonts.amiri(
-                  color: AppColors.Burgundy,
+                  color: AppColors.burgundy,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -239,10 +238,6 @@ class _ContactRow {
   const _ContactRow(this.label, this.value, {this.isLink = false});
 }
 
-/// One contact row inside [_PlanProviderCard] — link rows (social account,
-/// location) open in the browser/maps app when tapped, same as
-/// ProviderDetailScreen's own detail rows; the phone number stays
-/// plain text.
 class _ContactRowTile extends StatelessWidget {
   final _ContactRow row;
 
@@ -250,13 +245,14 @@ class _ContactRowTile extends StatelessWidget {
 
   Future<void> _openLink(BuildContext context) async {
     final uri = Uri.tryParse(row.value);
-    final opened = uri != null &&
+    final opened =
+        uri != null &&
         await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!opened && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('تعذّر فتح الرابط', style: GoogleFonts.amiri()),
-          backgroundColor: AppColors.Burgundy,
+          backgroundColor: AppColors.burgundy,
         ),
       );
     }
@@ -278,7 +274,7 @@ class _ContactRowTile extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: GoogleFonts.amiri(
-                color: row.isLink ? AppColors.Gold : AppColors.Burgundy,
+                color: row.isLink ? AppColors.gold : AppColors.burgundy,
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
                 decoration: row.isLink ? TextDecoration.underline : null,
@@ -287,7 +283,7 @@ class _ContactRowTile extends StatelessWidget {
           ),
           if (row.isLink) ...[
             const SizedBox(width: 6),
-            Icon(Icons.open_in_new, size: 16, color: AppColors.Burgundy),
+            Icon(Icons.open_in_new, size: 16, color: AppColors.burgundy),
           ],
         ],
       ),

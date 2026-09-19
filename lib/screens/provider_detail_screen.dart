@@ -5,14 +5,6 @@ import 'package:final_project/constants/app_colors.dart';
 import 'package:final_project/models/providers_model.dart';
 import 'package:final_project/widgets/app_header.dart';
 
-/// Full details for one service provider, as stored in the `providers`
-/// table (see [ProvidersDatabaseService]). Reached by tapping a service
-/// card on the recommended-plan screen. Only shows the fields that are
-/// actually present on the record. "الحساب الاجتماعي" and "الموقع" are
-/// stored as full URLs (checked directly against the live `providers`
-/// table — e.g. a tiktok.com link and a maps.app.goo.gl link
-/// respectively), so those two rows open in the browser/maps app when
-/// tapped; every other row is plain, non-interactive text.
 class ProviderDetailScreen extends StatelessWidget {
   final Providers provider;
 
@@ -30,7 +22,11 @@ class ProviderDetailScreen extends StatelessWidget {
       if (provider.phoneNumber != null && provider.phoneNumber!.isNotEmpty)
         _DetailRowData('رقم الجوال', provider.phoneNumber!),
       if (provider.socialAccount != null && provider.socialAccount!.isNotEmpty)
-        _DetailRowData('الحساب الاجتماعي', provider.socialAccount!, isLink: true),
+        _DetailRowData(
+          'الحساب الاجتماعي',
+          provider.socialAccount!,
+          isLink: true,
+        ),
       if (provider.locationLink != null && provider.locationLink!.isNotEmpty)
         _DetailRowData('الموقع', provider.locationLink!, isLink: true),
     ];
@@ -38,7 +34,7 @@ class ProviderDetailScreen extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: AppColors.Beige,
+        backgroundColor: AppColors.beige,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
@@ -103,13 +99,14 @@ class _DetailRow extends StatelessWidget {
 
   Future<void> _openLink(BuildContext context) async {
     final uri = Uri.tryParse(data.value);
-    final opened = uri != null &&
+    final opened =
+        uri != null &&
         await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!opened && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('تعذّر فتح الرابط', style: GoogleFonts.amiri()),
-          backgroundColor: AppColors.Burgundy,
+          backgroundColor: AppColors.burgundy,
         ),
       );
     }
@@ -150,11 +147,10 @@ class _DetailRow extends StatelessWidget {
                   maxLines: data.isLink ? 1 : null,
                   overflow: data.isLink ? TextOverflow.ellipsis : null,
                   style: GoogleFonts.amiri(
-                    color: data.isLink ? AppColors.Gold : AppColors.Burgundy,
+                    color: data.isLink ? AppColors.gold : AppColors.burgundy,
                     fontSize: 19,
                     fontWeight: FontWeight.bold,
-                    decoration:
-                        data.isLink ? TextDecoration.underline : null,
+                    decoration: data.isLink ? TextDecoration.underline : null,
                   ),
                 ),
               ],
@@ -162,7 +158,7 @@ class _DetailRow extends StatelessWidget {
           ),
           if (data.isLink) ...[
             const SizedBox(width: 8),
-            Icon(Icons.open_in_new, size: 22, color: AppColors.Burgundy),
+            Icon(Icons.open_in_new, size: 22, color: AppColors.burgundy),
           ],
         ],
       ),

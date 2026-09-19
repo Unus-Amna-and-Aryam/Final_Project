@@ -8,13 +8,6 @@ import 'package:final_project/constants/app_colors.dart';
 import 'package:final_project/screens/guests_screen.dart';
 import 'package:final_project/widgets/app_header.dart';
 
-/// Lets the user customize a themed invitation card (title, description,
-/// a sample guest name for the live preview) before moving on to
-/// [GuestsScreen] to add real guests and send it to them. The card's
-/// gradient/accent/icon are picked from [eventTypeId] — one of the
-/// event_type question's option ids (see questions_model.dart), not a
-/// free-form string — so it matches whichever event the user's onboarding
-/// answers said this plan is for.
 class InvitationCardScreen extends StatefulWidget {
   final String eventTypeId;
 
@@ -28,49 +21,36 @@ class _InvitationCardScreenState extends State<InvitationCardScreen> {
   final _titleController = TextEditingController();
   final _descController = TextEditingController();
   final _guestNameController = TextEditingController();
-  // Wraps whichever card preview is showing (see build()) so it can be
-  // rasterized into an actual image for GuestsScreen to share — WhatsApp's
-  // wa.me link can pre-fill text and open a specific contact, but it can't
-  // also attach an image, so sending the real card design has to go
-  // through the OS share sheet with a real image file instead.
   final _cardBoundaryKey = GlobalKey();
-
-  // Keyed by the event_type question's actual option ids (questions_model.dart)
-  // — not the English placeholders ('wedding'/'graduation'/'eid'/'special')
-  // this screen started from, which don't exist anywhere in this app's data.
-  //
-  // Every theme is a real photo background now (see _buildImageCard) —
-  // 'bgGradient'/_buildGradientCard stay only as a fallback for an event
-  // type that doesn't have a photo yet.
   Map<String, dynamic> _cardTheme() {
     switch (widget.eventTypeId) {
-      case 'wedding': // زفاف
+      case 'wedding':
         return {
           'bgImage': 'assets/images/wedding.jpg',
           'defaultTitle': 'حفل زفاف',
-          'accentColor': AppColors.Burgundy,
+          'accentColor': AppColors.burgundy,
           'icon': Icons.favorite,
         };
-      case 'graduation': // تخرج
+      case 'graduation':
         return {
           'bgImage': 'assets/images/graduation.jpg',
           'defaultTitle': 'حفل تخرج',
-          'accentColor': AppColors.Burgundy,
+          'accentColor': AppColors.burgundy,
           'icon': Icons.school,
         };
-      case 'holidays': // أعياد
+      case 'holidays':
         return {
           'bgImage': 'assets/images/eid.jpg',
           'defaultTitle': 'عيد مبارك',
-          'accentColor': AppColors.Burgundy,
+          'accentColor': AppColors.burgundy,
           'icon': Icons.celebration,
         };
-      case 'invitation': // عزيمة
+      case 'invitation':
       default:
         return {
           'bgImage': 'assets/images/other.jpg',
           'defaultTitle': 'دعوة خاصة',
-          'accentColor': AppColors.Burgundy,
+          'accentColor': AppColors.burgundy,
           'icon': Icons.card_giftcard,
         };
     }
@@ -103,20 +83,16 @@ class _InvitationCardScreenState extends State<InvitationCardScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: AppColors.Burgundy, width: 1.5),
+        borderSide: BorderSide(color: AppColors.burgundy, width: 1.5),
       ),
     );
   }
 
-  // Rasterizes the card preview exactly as currently shown (whichever
-  // fields/theme are filled in) into a PNG — this is the actual file
-  // GuestsScreen shares, not just the invitation text.
   Future<Uint8List?> _captureCardImage() async {
-    final boundary = _cardBoundaryKey.currentContext?.findRenderObject()
-        as RenderRepaintBoundary?;
+    final boundary =
+        _cardBoundaryKey.currentContext?.findRenderObject()
+            as RenderRepaintBoundary?;
     if (boundary == null) return null;
-    // 3x: the on-screen card is a small preview; a low-res capture would
-    // look blurry once shared full-size in a chat.
     final image = await boundary.toImage(pixelRatio: 3);
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     return byteData?.buffer.asUint8List();
@@ -134,7 +110,7 @@ class _InvitationCardScreenState extends State<InvitationCardScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('تعذّر إنشاء صورة البطاقة', style: GoogleFonts.amiri()),
-          backgroundColor: AppColors.Burgundy,
+          backgroundColor: AppColors.burgundy,
         ),
       );
       return;
@@ -153,9 +129,6 @@ class _InvitationCardScreenState extends State<InvitationCardScreen> {
     );
   }
 
-  // Every non-image theme: a plain gradient card with the icon/title/desc/
-  // guest-name stacked and centered — see InvitationCardScreen's own doc
-  // comment.
   Widget _buildGradientCard(Map<String, dynamic> theme) {
     return Container(
       height: 230,
@@ -179,10 +152,16 @@ class _InvitationCardScreenState extends State<InvitationCardScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(theme['icon'] as IconData, color: theme['accentColor'] as Color, size: 28),
+          Icon(
+            theme['icon'] as IconData,
+            color: theme['accentColor'] as Color,
+            size: 28,
+          ),
           const SizedBox(height: 8),
           Text(
-            _titleController.text.isEmpty ? 'اسم المناسبة' : _titleController.text,
+            _titleController.text.isEmpty
+                ? 'اسم المناسبة'
+                : _titleController.text,
             style: GoogleFonts.amiri(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -208,7 +187,7 @@ class _InvitationCardScreenState extends State<InvitationCardScreen> {
             style: GoogleFonts.amiri(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: AppColors.Beige,
+              color: AppColors.beige,
             ),
             textAlign: TextAlign.center,
           ),
@@ -217,12 +196,6 @@ class _InvitationCardScreenState extends State<InvitationCardScreen> {
     );
   }
 
-  // The 'graduation' theme: a real photo background (two graduation caps
-  // hanging at the top-left, the rest of the frame plain/empty) instead of
-  // a gradient — text is positioned in that empty space below the caps
-  // rather than centered over them, and colored dark (Burgundy) since the
-  // photo's background is light, unlike every gradient card's light text
-  // on a dark background.
   Widget _buildImageCard(Map<String, dynamic> theme) {
     return Container(
       height: 420,
@@ -244,9 +217,6 @@ class _InvitationCardScreenState extends State<InvitationCardScreen> {
           Image.asset(
             theme['bgImage'] as String,
             fit: BoxFit.cover,
-            // Keeps the hanging caps (near the image's top) in frame even
-            // though this card's aspect ratio differs from the source
-            // photo's — a centered cover crop would cut into them.
             alignment: Alignment.topCenter,
           ),
           Positioned(
@@ -273,7 +243,7 @@ class _InvitationCardScreenState extends State<InvitationCardScreen> {
                       : _descController.text,
                   style: GoogleFonts.amiri(
                     fontSize: 14,
-                    color: AppColors.Burgundy.withValues(alpha: 0.75),
+                    color: AppColors.burgundy.withValues(alpha: 0.75),
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 3,
@@ -293,7 +263,7 @@ class _InvitationCardScreenState extends State<InvitationCardScreen> {
               style: GoogleFonts.amiri(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-                color: AppColors.Burgundy,
+                color: AppColors.burgundy,
               ),
               textAlign: TextAlign.center,
             ),
@@ -310,7 +280,7 @@ class _InvitationCardScreenState extends State<InvitationCardScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: AppColors.Beige,
+        backgroundColor: AppColors.beige,
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -322,9 +292,6 @@ class _InvitationCardScreenState extends State<InvitationCardScreen> {
                   onBack: () => Navigator.of(context).pop(),
                 ),
                 const SizedBox(height: 20),
-                // Live preview — updates as the fields below change.
-                // Wrapped in RepaintBoundary (see _captureCardImage) so the
-                // exact same design shown here is what gets shared.
                 RepaintBoundary(
                   key: _cardBoundaryKey,
                   child: theme.containsKey('bgImage')
@@ -337,7 +304,7 @@ class _InvitationCardScreenState extends State<InvitationCardScreen> {
                   textAlign: TextAlign.right,
                   textDirection: TextDirection.rtl,
                   onChanged: (_) => setState(() {}),
-                  style: GoogleFonts.amiri(color: AppColors.Burgundy),
+                  style: GoogleFonts.amiri(color: AppColors.burgundy),
                   decoration: _fieldDecoration('اسم المناسبة أو نوعها'),
                 ),
                 const SizedBox(height: 12),
@@ -347,9 +314,10 @@ class _InvitationCardScreenState extends State<InvitationCardScreen> {
                   textDirection: TextDirection.rtl,
                   onChanged: (_) => setState(() {}),
                   maxLines: 2,
-                  style: GoogleFonts.amiri(color: AppColors.Burgundy),
-                  decoration:
-                      _fieldDecoration('وصف الدعوة (مثل: يسعدنا حضوركم...)'),
+                  style: GoogleFonts.amiri(color: AppColors.burgundy),
+                  decoration: _fieldDecoration(
+                    'وصف الدعوة (مثل: يسعدنا حضوركم...)',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -357,7 +325,7 @@ class _InvitationCardScreenState extends State<InvitationCardScreen> {
                   textAlign: TextAlign.right,
                   textDirection: TextDirection.rtl,
                   onChanged: (_) => setState(() {}),
-                  style: GoogleFonts.amiri(color: AppColors.Burgundy),
+                  style: GoogleFonts.amiri(color: AppColors.burgundy),
                   decoration: _fieldDecoration('اسم المدعو'),
                 ),
                 const SizedBox(height: 24),
@@ -366,26 +334,25 @@ class _InvitationCardScreenState extends State<InvitationCardScreen> {
                   height: 52,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.Burgundy,
+                      backgroundColor: AppColors.burgundy,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    onPressed:
-                        _capturing ? null : () => _goToGuests(theme),
+                    onPressed: _capturing ? null : () => _goToGuests(theme),
                     child: _capturing
                         ? SizedBox(
                             width: 22,
                             height: 22,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: AppColors.Beige,
+                              color: AppColors.beige,
                             ),
                           )
                         : Text(
                             'التالي: إضافة قائمة المدعوين وإرسال الدعوات',
                             style: GoogleFonts.amiri(
-                              color: AppColors.Beige,
+                              color: AppColors.beige,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),

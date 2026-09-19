@@ -3,10 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:final_project/constants/app_colors.dart';
 import 'package:final_project/screens/create_acount_screen.dart';
 
-/// Shown in place of a tab's real content when there's no signed-in
-/// Supabase user — used by ProfileScreen and FavoritesScreen, both
-/// meaningless without an account (unlike the home tab, which the
-/// "تخطي الآن" skip flow can use freely without ever authenticating).
 class SignInRequiredView extends StatelessWidget {
   const SignInRequiredView({super.key});
 
@@ -18,13 +14,13 @@ class SignInRequiredView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.lock_outline, size: 56, color: AppColors.Burgundy),
+            Icon(Icons.lock_outline, size: 56, color: AppColors.burgundy),
             const SizedBox(height: 16),
             Text(
               'يجب تسجيل الدخول لعرض هذه الصفحة',
               textAlign: TextAlign.center,
               style: GoogleFonts.amiri(
-                color: AppColors.Burgundy,
+                color: AppColors.burgundy,
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -40,7 +36,7 @@ class SignInRequiredView extends StatelessWidget {
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.Burgundy,
+                  backgroundColor: AppColors.burgundy,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),
@@ -48,7 +44,7 @@ class SignInRequiredView extends StatelessWidget {
                 child: Text(
                   'سجل الدخول الآن',
                   style: GoogleFonts.amiri(
-                    color: AppColors.Beige,
+                    color: AppColors.beige,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),

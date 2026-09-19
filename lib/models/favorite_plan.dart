@@ -1,9 +1,5 @@
 import 'package:final_project/models/providers_model.dart';
 
-/// A full recommended plan saved to favorites (see [FavoritesDatabaseService]
-/// and the `favorite_plans` table) — a snapshot of the onboarding answers
-/// that produced it plus every provider that was recommended at save time,
-/// not a live reference back to RecommendedPlanScreen's current state.
 class FavoritePlan {
   final int? id;
   final String eventType;
@@ -33,9 +29,9 @@ class FavoritePlan {
   }
 
   Map<String, dynamic> toJson() => {
-        'event_type': eventType,
-        'guest_count': guestCount,
-        'budget': budget,
-        'providers': providers.map((p) => p.toJson()).toList(),
-      };
+    'event_type': eventType,
+    'guest_count': guestCount,
+    'budget': budget,
+    'providers': providers.map((p) => p.toJson()).toList(),
+  };
 }

@@ -14,10 +14,6 @@ import 'package:final_project/widgets/app_bottom_nav_bar.dart';
 import 'package:final_project/widgets/app_header.dart';
 import 'package:final_project/widgets/sign_in_required_view.dart';
 
-/// The favorites screen, reached from the bottom nav bar: every single
-/// provider saved from a _ServiceCard's "المفضلة" button, plus every full
-/// plan saved from RecommendedPlanScreen's "اضغط للمفضلة" button — both
-/// loaded from [FavoritesDatabaseService], scoped to the signed-in user.
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
 
@@ -30,21 +26,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   late final Future<List<FavoriteProviderEntry>> _favoriteProvidersFuture;
   late final Future<List<FavoritePlan>> _favoritePlansFuture;
 
-  // Ids removed via the gold heart button, filtered out of the loaded
-  // futures' data below instead of refetching — the delete already
-  // happened in Supabase by the time an id lands here (see
-  // _FavoriteHeartButton.onRemove).
   final Set<int> _removedProviderIds = {};
   final Set<int> _removedPlanIds = {};
 
-  // Drives the "عناصري المفضلة" carousel and the dot bar underneath it —
-  // the dots re-render off [_currentProviderPage], which this listener
-  // keeps in sync with whatever page is actually centered as the user
-  // swipes.
   final _providerPageController = PageController(viewportFraction: 0.72);
   int _currentProviderPage = 0;
-
-  // Same idea as the pair above, for the "خططي المفضلة" carousel.
   final _planPageController = PageController(viewportFraction: 0.72);
   int _currentPlanPage = 0;
 
@@ -87,20 +73,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
 
   void _handleNavTap(BottomNavItem item) {
-    if (item == BottomNavItem.favorites) return; // already here
-    // The real onboarding answers aren't available from this tab directly,
-    // but RecommendedPlanScreen stashes them in OnboardingSession every
-    // time it's built — reuse those instead of losing them to empty
-    // defaults. Falls back to placeholder defaults only if the home tab
-    // was somehow never reached yet this app run.
+    if (item == BottomNavItem.favorites) return;
     final screen = item == BottomNavItem.home
         ? RecommendedPlanScreen(
             answers: OnboardingSession.current ?? const OnboardingAnswers(),
           )
         : const ProfileScreen();
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => screen),
-    );
+    Navigator.of(context)
+        .pushReplacement(MaterialPageRoute(builder: (context) => screen));
   }
 
   bool get _isSignedIn => Supabase.instance.client.auth.currentUser != null;
@@ -110,7 +90,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: AppColors.Beige,
+        backgroundColor: AppColors.beige,
         body: SafeArea(
           child: !_isSignedIn
               ? Padding(
@@ -149,14 +129,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     );
   }
 
-  // Same title + count-badge style as RecommendedPlanScreen's
-  // _buildServicesHeader (that one's private to that file, so this is a
-  // small local equivalent rather than a shared import).
   Widget _buildSectionHeader(String title) {
     return Text(
       title,
       style: GoogleFonts.amiri(
-        color: AppColors.Burgundy,
+        color: AppColors.burgundy,
         fontSize: 22,
         fontWeight: FontWeight.bold,
       ),
@@ -184,24 +161,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               height: 150,
               child: PageView.builder(
                 controller: _providerPageController,
-                // RTL Directionality already reverses PageView's
-                // scroll/paint direction for us, so the first item lands
-                // on the right and swiping right-to-left reveals the
-                // rest, matching the app's reading direction.
                 itemCount: entries.length,
-                // Keyed by the favorite row's own id so Flutter maps each
-                // card's Element (and so each heart button's filled/empty
-                // state) to the *same* entry across rebuilds — without
-                // this, removing one card mid-list shifted every card
-                // after it onto the wrong (stale) heart state, since a
-                // keyless list matches old/new children by position, not
-                // identity.
                 itemBuilder: (context, index) => Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: _FavoriteProviderCard(
                     key: ValueKey(entries[index].id),
                     provider: entries[index].provider,
-                    isActive: index ==
+                    isActive:
+                        index ==
                         _currentProviderPage.clamp(0, entries.length - 1),
                     onRemove: () => _removeFavoriteProvider(entries[index].id),
                   ),
@@ -240,10 +207,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               height: 140,
               child: PageView.builder(
                 controller: _planPageController,
-                // Same RTL reasoning as the provider carousel above.
                 itemCount: plans.length,
-                // Keyed for the same reason as the provider cards above —
-                // see that itemBuilder's comment.
                 itemBuilder: (context, index) {
                   final plan = plans[index];
                   return Padding(
@@ -280,7 +244,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   }
 }
 
-/// One favorited provider, as a page in the "عناصري المفضلة" carousel.
 class _FavoriteProviderCard extends StatelessWidget {
   final Providers provider;
   final bool isActive;
@@ -294,9 +257,10 @@ class _FavoriteProviderCard extends StatelessWidget {
   });
 
   String get _subtitle {
-    final parts = [provider.category, provider.subCategory]
-        .where((s) => s != null && s.isNotEmpty)
-        .cast<String>();
+    final parts = [
+      provider.category,
+      provider.subCategory,
+    ].where((s) => s != null && s.isNotEmpty).cast<String>();
     return parts.join(' - ');
   }
 
@@ -320,7 +284,7 @@ class _FavoriteProviderCard extends StatelessWidget {
                 color: AppColors.white,
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: isActive ? AppColors.Burgundy : Colors.transparent,
+                  color: isActive ? AppColors.burgundy : Colors.transparent,
                   width: 2,
                 ),
                 boxShadow: [
@@ -340,7 +304,7 @@ class _FavoriteProviderCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.amiri(
-                      color: AppColors.Burgundy,
+                      color: AppColors.burgundy,
                       fontSize: 19,
                       fontWeight: FontWeight.bold,
                     ),
@@ -362,18 +326,19 @@ class _FavoriteProviderCard extends StatelessWidget {
             ),
           ),
         ),
-        Positioned(top: 8, left: 8, child: _FavoriteHeartButton(onRemove: onRemove)),
+        Positioned(
+          top: 8,
+          left: 8,
+          child: _FavoriteHeartButton(onRemove: onRemove),
+        ),
       ],
     );
   }
 }
 
-/// One favorited full plan, as a page in the "خططي المفضلة" carousel.
 class _FavoritePlanCard extends StatelessWidget {
   final FavoritePlan plan;
   final bool isActive;
-  // Null when [plan] somehow has no row id yet (see FavoritePlan.id) — the
-  // heart button is left off entirely rather than being unable to delete.
   final Future<void> Function()? onRemove;
 
   const _FavoritePlanCard({
@@ -401,7 +366,7 @@ class _FavoritePlanCard extends StatelessWidget {
             color: AppColors.white,
             borderRadius: BorderRadius.circular(22),
             border: Border.all(
-              color: isActive ? AppColors.Burgundy : Colors.transparent,
+              color: isActive ? AppColors.burgundy : Colors.transparent,
               width: 2,
             ),
             boxShadow: [
@@ -418,7 +383,7 @@ class _FavoritePlanCard extends StatelessWidget {
               Text(
                 plan.eventType.isNotEmpty ? plan.eventType : 'خطة بدون اسم',
                 style: GoogleFonts.amiri(
-                  color: AppColors.Burgundy,
+                  color: AppColors.burgundy,
                   fontSize: 21,
                   fontWeight: FontWeight.bold,
                 ),
@@ -449,18 +414,16 @@ class _FavoritePlanCard extends StatelessWidget {
     return Stack(
       children: [
         card,
-        Positioned(top: 8, left: 8, child: _FavoriteHeartButton(onRemove: onRemove!)),
+        Positioned(
+          top: 8,
+          left: 8,
+          child: _FavoriteHeartButton(onRemove: onRemove!),
+        ),
       ],
     );
   }
 }
 
-/// The gold heart button overlaid on a favorite card ([_FavoriteProviderCard]
-/// / [_FavoritePlanCard]): filled by default, flips to an outline as soon as
-/// it's tapped (before the delete even finishes), then the card disappears
-/// from the list once [onRemove] — which does the real Supabase delete and
-/// updates the parent's state — succeeds. On failure it flips back to
-/// filled and the card stays.
 class _FavoriteHeartButton extends StatefulWidget {
   final Future<void> Function() onRemove;
 
@@ -490,8 +453,11 @@ class _FavoriteHeartButtonState extends State<_FavoriteHeartButton> {
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('تعذّر الحذف الآن، حاول لاحقًا', style: GoogleFonts.amiri()),
-          backgroundColor: AppColors.Burgundy,
+          content: Text(
+            'تعذّر الحذف الآن، حاول لاحقًا',
+            style: GoogleFonts.amiri(),
+          ),
+          backgroundColor: AppColors.burgundy,
         ),
       );
     }
@@ -505,7 +471,7 @@ class _FavoriteHeartButtonState extends State<_FavoriteHeartButton> {
         padding: const EdgeInsets.all(6),
         child: Icon(
           _filled ? Icons.favorite : Icons.favorite_border,
-          color: AppColors.Gold,
+          color: AppColors.gold,
           size: 22,
         ),
       ),
@@ -513,9 +479,6 @@ class _FavoriteHeartButtonState extends State<_FavoriteHeartButton> {
   }
 }
 
-/// The dot bar under "عناصري المفضلة": one dot per card, the current one
-/// drawn as a wider pill so it reads clearly as "you are here" — updates
-/// live as _FavoritesScreenState's PageController reports a new page.
 class _DotsIndicator extends StatelessWidget {
   final int count;
   final int currentIndex;
@@ -536,8 +499,8 @@ class _DotsIndicator extends StatelessWidget {
           height: 8,
           decoration: BoxDecoration(
             color: active
-                ? AppColors.Burgundy
-                : AppColors.Gold.withValues(alpha: 0.35),
+                ? AppColors.burgundy
+                : AppColors.gold.withValues(alpha: 0.35),
             borderRadius: BorderRadius.circular(4),
           ),
         );

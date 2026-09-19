@@ -17,11 +17,6 @@ import 'package:final_project/widgets/app_bottom_nav_bar.dart';
 import 'package:final_project/widgets/app_header.dart';
 import 'package:final_project/widgets/sign_in_required_view.dart';
 
-/// The profile screen, reached from the bottom nav bar: a profile circle
-/// with the locally-saved display name (see [profileDisplayNameKey] in
-/// my_info_screen.dart) under it, "معلوماتي" / "من نحن" cards that open
-/// their own screens, and an "أين نحن؟" card that expands in place to show
-/// 3 city cards.
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -50,19 +45,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  // Reads the picked file as raw bytes (via XFile, not dart:io/path_provider)
-  // and stores it base64-encoded in SharedPreferences — the only approach
-  // that works identically on every target this app builds for, including
-  // a future Flutter Web build: there's no real filesystem to save a path
-  // into on web, but bytes + Image.memory work everywhere.
   Future<void> _pickProfileImage() async {
     try {
       final picked = await ImagePicker().pickImage(
         source: ImageSource.gallery,
         imageQuality: 85,
-        // Keeps the base64 string (and so the SharedPreferences entry)
-        // reasonably sized — this is a thumbnail for a 96x96 circle, not a
-        // full-resolution photo.
         maxWidth: 600,
         maxHeight: 600,
       );
@@ -75,15 +62,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       setState(() => _imageBytes = bytes);
     } catch (e) {
-      // Surfaced instead of left silent — a bare await failing here
-      // (e.g. a plugin not yet registered after a hot reload instead of a
-      // full restart) would otherwise look exactly like the circle not
-      // responding to taps at all.
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('تعذّر اختيار الصورة: $e', style: GoogleFonts.amiri()),
-          backgroundColor: AppColors.Burgundy,
+          backgroundColor: AppColors.burgundy,
         ),
       );
     }
@@ -92,17 +75,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _openMyInfo(BuildContext context) async {
     await Navigator.of(context)
         .push(MaterialPageRoute(builder: (context) => const MyInfoScreen()));
-    // The name may have just been added/edited on MyInfoScreen — reload it
-    // so it shows immediately under the profile circle on return.
     _loadProfile();
   }
 
   Future<void> _signOut(BuildContext context) async {
     await Supabase.instance.client.auth.signOut();
     if (!context.mounted) return;
-    // Clears the whole stack (this profile tab and everything under it),
-    // so the user can't navigate back into signed-in screens with the back
-    // button after signing out.
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const CreatAcountScreen()),
       (route) => false,
@@ -110,12 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _handleNavTap(BuildContext context, BottomNavItem item) {
-    if (item == BottomNavItem.profile) return; // already here
-    // The real onboarding answers aren't available from this tab directly,
-    // but RecommendedPlanScreen stashes them in OnboardingSession every
-    // time it's built — reuse those instead of losing them to empty
-    // defaults. Falls back to placeholder defaults only if the home tab
-    // was somehow never reached yet this app run.
+    if (item == BottomNavItem.profile) return;
     final screen = item == BottomNavItem.home
         ? RecommendedPlanScreen(
             answers: OnboardingSession.current ?? const OnboardingAnswers(),
@@ -132,7 +105,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: AppColors.Beige,
+        backgroundColor: AppColors.beige,
         body: SafeArea(
           child: !_isSignedIn
               ? Padding(
@@ -150,9 +123,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // No onBack — this tab's root is only ever reached via
-                      // pushReplacement (see AppBottomNavBar), so there's never a
-                      // route to pop back to.
                       const AppHeader(title: 'الملف الشخصي', fontSize: 28),
                       const SizedBox(height: 18),
                       _buildProfileCircle(),
@@ -163,7 +133,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             : 'مستخدم أُنس',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.amiri(
-                          color: AppColors.Burgundy,
+                          color: AppColors.burgundy,
                           fontSize: 21,
                           fontWeight: FontWeight.bold,
                         ),
@@ -217,7 +187,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               decoration: BoxDecoration(
                 color: AppColors.white,
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.Gold, width: 2.5),
+                border: Border.all(color: AppColors.gold, width: 2.5),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.08),
@@ -234,10 +204,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       height: 96,
                       fit: BoxFit.cover,
                     )
-                  : Icon(Icons.person, size: 56, color: AppColors.Burgundy),
+                  : Icon(Icons.person, size: 56, color: AppColors.burgundy),
             ),
-            // Small camera badge signaling the circle is tappable to
-            // add/change the picture.
             Positioned(
               bottom: 0,
               right: 0,
@@ -245,7 +213,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 width: 28,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: AppColors.Gold,
+                  color: AppColors.gold,
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.white, width: 2),
                 ),
@@ -253,7 +221,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Icon(
                   Icons.camera_alt,
                   size: 14,
-                  color: AppColors.Burgundy,
+                  color: AppColors.burgundy,
                 ),
               ),
             ),
@@ -290,7 +258,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     'أين نحن؟',
                     style: GoogleFonts.amiri(
-                      color: AppColors.Burgundy,
+                      color: AppColors.burgundy,
                       fontSize: 19,
                       fontWeight: FontWeight.bold,
                     ),
@@ -299,7 +267,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _whereExpanded
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_down,
-                    color: AppColors.Burgundy,
+                    color: AppColors.burgundy,
                   ),
                 ],
               ),
@@ -314,8 +282,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     name: 'الرياض',
                     imagePath: 'assets/images/riyadh_d.jpg',
                     comingSoon: false,
-                    // TODO: navigate to the Riyadh destination once it's
-                    // decided what this should open.
                     onTap: () {},
                   ),
                   const SizedBox(height: 12),
@@ -339,15 +305,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-/// "معلوماتي" / "من نحن" style menu card: full-width, white background,
-/// rounded corners, light shadow — same look as the recommendation/favorite
-/// cards elsewhere in the app.
 class _ProfileMenuCard extends StatelessWidget {
   final String title;
   final VoidCallback onTap;
-  // Defaults match every other menu card ("معلوماتي"/"من نحن"); overridden
-  // by the sign-out card to visually set it apart as a different kind of
-  // action.
   final IconData icon;
   final Color? color;
 
@@ -360,7 +320,7 @@ class _ProfileMenuCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final resolvedColor = color ?? AppColors.Burgundy;
+    final resolvedColor = color ?? AppColors.burgundy;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -403,9 +363,6 @@ class _ProfileMenuCard extends StatelessWidget {
   }
 }
 
-/// One city card inside the expanded "أين نحن؟" section: a full-width photo
-/// with the city name overlaid top-right. [comingSoon] cities are dimmed,
-/// show "قريبا ..." bottom-left, and aren't tappable ([onTap] ignored).
 class _CityCard extends StatelessWidget {
   final String name;
   final String imagePath;
@@ -427,7 +384,7 @@ class _CityCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.Gold.withValues(alpha: 0.5)),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
       ),
       child: Stack(
         fit: StackFit.expand,

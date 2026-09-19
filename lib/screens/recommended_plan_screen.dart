@@ -14,25 +14,6 @@ import 'package:final_project/service/favorites_database_service.dart';
 import 'package:final_project/service/providers_database_service.dart';
 import 'package:final_project/widgets/app_bottom_nav_bar.dart';
 
-/// Matches a needs-question sub-item id (see [QuestionSubItem] ids in
-/// questions_model.dart) to the provider row(s) it corresponds to in the
-/// `providers` table. [subCategory] is null for needs that cover a whole
-/// provider category (e.g. the merged "venues_combined" item) — every
-/// provider in [category] matches regardless of its sub-category.
-///
-/// Values here are the actual strings stored in the database (checked
-/// directly against the `providers` table via its live data, not the
-/// question's own wording — several differ, and getting any of them wrong
-/// means that need silently produces no recommendation card at all (no
-/// error, it just never matches a provider):
-/// - several drop the hamza the question text uses ("او" vs "أو", "ارقام"
-///   vs "أرقام")
-/// - "decor_stands" ("ستاندات أو مجسمات") is stored under sub_category
-///   "ستاندات" only
-/// - "hospitality_cake" ("كيكات") is stored under sub_category "الكيك"
-/// - "hospitality_sweets" ("أصناف الحلا") is stored under sub_category
-///   "الحالي", which reads like a data-entry typo for "الحلا" but is what's
-///   actually there
 class _NeedProviderMatch {
   final String category;
   final String? subCategory;
@@ -46,7 +27,10 @@ const Map<String, _NeedProviderMatch> _needIdToProviderMatch = {
   'catering_buffet': _NeedProviderMatch('مأكولات', 'بوفيه'),
   'decor_stands': _NeedProviderMatch('الديكور والتنسيق', 'ستاندات'),
   'decor_furniture': _NeedProviderMatch('الديكور والتنسيق', 'طاولات ومقاعد'),
-  'decor_numbers': _NeedProviderMatch('الديكور والتنسيق', 'ارقام للتنسيق الخاص'),
+  'decor_numbers': _NeedProviderMatch(
+    'الديكور والتنسيق',
+    'ارقام للتنسيق الخاص',
+  ),
   'decor_flowers': _NeedProviderMatch('الديكور والتنسيق', 'زهور'),
   'hospitality_cake': _NeedProviderMatch('الضيافة', 'الكيك'),
   'hospitality_sweets': _NeedProviderMatch('الضيافة', 'الحالي'),
@@ -57,11 +41,6 @@ const Map<String, _NeedProviderMatch> _needIdToProviderMatch = {
   'bride_salons': _NeedProviderMatch('العروس', 'الصالونات'),
   'bride_assistant': _NeedProviderMatch('العروس', 'الوصيفة'),
 };
-
-// Which of the needs-question's 6 categories (see [QuestionCategory] ids in
-// questions_model.dart) each need sub-item id belongs to. Used to tell,
-// from widget.answers.selectedNeedsIds alone, which whole categories the
-// user has any need selected in — for the budget-split estimate below.
 const Map<String, String> _needIdToCategoryGroup = {
   'venues_combined': 'venues',
   'catering_kitchens': 'catering',
@@ -79,12 +58,6 @@ const Map<String, String> _needIdToCategoryGroup = {
   'bride_salons': 'bride',
   'bride_assistant': 'bride',
 };
-
-// Default share of the budget each category is assumed to take, before
-// normalizing to just the categories the user actually selected needs in.
-// Used only as a fallback price for a recommendation card (see
-// _RecommendedPlanScreenState._normalizedShareFraction) when the candidate
-// currently shown in that card has no real price of its own.
 const Map<String, double> _needCategoryDefaultShares = {
   'venues': 0.35,
   'catering': 0.20,
@@ -93,16 +66,6 @@ const Map<String, double> _needCategoryDefaultShares = {
   'photography': 0.10,
   'bride': 0.10,
 };
-
-// Flat, realistic percentages of the *total* budget for specific needs,
-// used as that need's fallback price directly — unlike
-// [_needCategoryDefaultShares] above (which is normalized against every
-// selected category, then split across however many cards share one
-// category), these are used exactly as given, regardless of what else is
-// selected. Catering and bridal salons are commonly a bigger real expense
-// than their old category-average share reflected, and cakes specifically
-// a smaller one, so they're called out here individually rather than only
-// at the "catering"/"bride"/"hospitality" category level.
 const Map<String, double> _needShareOverride = {
   'catering_kitchens': 0.25,
   'catering_buffet': 0.25,
@@ -113,14 +76,6 @@ const Map<String, double> _needShareOverride = {
   'hospitality_favors': 0.10,
 };
 
-/// All providers matching one single selected need (see
-/// [_needIdToProviderMatch]), backing a single recommendation card —
-/// [candidates] is never empty; the card shows [candidates].first and lets
-/// "البديل" cycle through the rest. Every selected need gets its own card
-/// (not just its own category), so e.g. picking both "مطابخ" and "بوفيه"
-/// shows two catering cards, not one. [group] is the needs-category id (a
-/// key of [_needCategoryDefaultShares]) this need belongs to, used to work
-/// out that card's fallback price when its displayed candidate has none.
 class _CategoryRecommendation {
   final String needId;
   final String group;
@@ -129,9 +84,6 @@ class _CategoryRecommendation {
   const _CategoryRecommendation(this.needId, this.group, this.candidates);
 }
 
-/// The recommended-plan / home screen shown after onboarding: a budget
-/// summary card, a list of recommended services, and a favorite-plan
-/// button, with the app's bottom nav bar underneath.
 class RecommendedPlanScreen extends StatefulWidget {
   final OnboardingAnswers answers;
 
@@ -142,34 +94,12 @@ class RecommendedPlanScreen extends StatefulWidget {
 }
 
 class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
-  // The price currently shown on each recommendation card, keyed by that
-  // card's index — the *only* source of "المصروف" (see [_spent] below).
-  // Seeded with every card's initial displayed price
-  // (_ServiceCard.onDisplayedPriceChanged, fired right after each card
-  // first builds) as soon as recommendations are built from real provider
-  // data, then updated only when a card's "البديل" changes which price it
-  // shows. There is deliberately no other way to compute a total spend —
-  // this map's values are exactly what's printed on the cards on screen.
   Map<int, num> _displayedCardPrices = {};
-
-  // "المصروف": always exactly the sum of what's currently printed on the
-  // recommendation cards below, per [_displayedCardPrices]. Zero while
-  // provider data hasn't loaded yet (and so no cards are shown), matching
-  // the "nothing spent because nothing recommended yet" state on screen.
-  double get _spent => _displayedCardPrices.values
-      .fold<double>(0, (sum, price) => sum + price);
+  double get _spent =>
+      _displayedCardPrices.values.fold<double>(0, (sum, price) => sum + price);
 
   double get _budget => widget.answers.budget;
   int get _guestCount => widget.answers.guestCount;
-
-  // _spent can legitimately exceed _budget (e.g. real provider prices for
-  // the selected needs cost more than planned), and "المتبقي" is left
-  // unclamped so it can go negative and show the real overrun. But a
-  // progress bar can only ever paint a fraction between 0 and 1 — Flutter
-  // widgets that take a 0-1 value don't tolerate an out-of-range one — so
-  // the ratio actually handed to the widget is clamped separately here.
-  // Also guards against dividing by a zero budget (e.g. this screen's
-  // placeholder OnboardingAnswers()), which would otherwise produce NaN.
   double get _spentRatio =>
       _budget > 0 ? (_spent / _budget).clamp(0.0, 1.0) : 0.0;
 
@@ -179,19 +109,9 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
   void initState() {
     super.initState();
     _providersFuture = ProvidersDatabaseService().getAllProviders();
-    // Record these as the app's current real onboarding answers, so
-    // switching to another bottom-nav tab and back rebuilds this screen
-    // with the same answers instead of empty defaults — see
-    // [OnboardingSession].
     OnboardingSession.current = widget.answers;
   }
 
-  // [group]'s share of [_needCategoryDefaultShares], normalized against
-  // just [selectedGroups] (every group with a card on screen) — i.e. what
-  // fraction of the budget a recommendation card for [group] should show
-  // as its price when its currently displayed candidate has no real price
-  // of its own. Used only to seed that one card's fallback price; never
-  // summed independently of the cards (see [_spent]).
   double _normalizedShareFraction(String group, Set<String> selectedGroups) {
     final selectedSharesSum = selectedGroups.fold<double>(
       0,
@@ -201,12 +121,6 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
     return (_needCategoryDefaultShares[group] ?? 0) / selectedSharesSum;
   }
 
-  // [recommendation]'s fallback price — what its card shows and counts
-  // when its displayed candidate has no real price. [_needShareOverride]
-  // needs use their flat percentage of the budget directly; every other
-  // need falls back to its category's normalized share (see
-  // [_normalizedShareFraction]), split evenly across [cardsPerGroup] many
-  // cards sharing that category.
   num _fallbackPriceFor(
     _CategoryRecommendation recommendation,
     Set<String> selectedGroups,
@@ -220,13 +134,12 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
   }
 
   void _handleNavTap(BottomNavItem item) {
-    if (item == BottomNavItem.home) return; // already here
+    if (item == BottomNavItem.home) return;
     final screen = item == BottomNavItem.profile
         ? const ProfileScreen()
         : const FavoritesScreen();
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => screen),
-    );
+    Navigator.of(context)
+        .pushReplacement(MaterialPageRoute(builder: (context) => screen));
   }
 
   @override
@@ -236,13 +149,7 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: AppColors.Beige,
-        // SafeArea's top inset has been observed to briefly report 0 right
-        // after popping back from a pushed screen (a known MediaQuery
-        // timing quirk on some Android setups), which shifted this whole
-        // page's content up under the status bar. Reading the inset
-        // directly and clamping it to a sane minimum avoids that, while
-        // still respecting the real inset on a normal/first load.
+        backgroundColor: AppColors.beige,
         body: SafeArea(
           top: false,
           child: SingleChildScrollView(
@@ -290,12 +197,6 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
         children: [
           Align(
             alignment: AlignmentDirectional.centerStart,
-            // arrow_back (full arrow with a shaft, not just the arrow_back_ios
-            // chevron) — mirrors to point right under this app's RTL
-            // Directionality, matching its position on the right. Not a
-            // plain pop(): question 5 ("needs") is no longer on the
-            // Navigator stack by the time this screen exists (see
-            // pushNeedsQuestion's doc comment), so this reopens it directly.
             child: _CircleIconButton(
               icon: Icons.arrow_back,
               onTap: () => pushNeedsQuestion(context, widget.answers),
@@ -304,7 +205,7 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
           Text(
             'أُنس',
             style: GoogleFonts.amiri(
-              color: AppColors.Burgundy,
+              color: AppColors.burgundy,
               fontSize: 26,
               fontWeight: FontWeight.bold,
             ),
@@ -321,12 +222,12 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
         decoration: BoxDecoration(
           color: AppColors.white,
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: AppColors.Gold.withOpacity(0.6)),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.6)),
         ),
         child: Text(
           'احتياجاتك جاهزة مع أُنس',
           style: GoogleFonts.amiri(
-            color: AppColors.Burgundy,
+            color: AppColors.burgundy,
             fontSize: 19,
             fontWeight: FontWeight.w600,
           ),
@@ -340,15 +241,18 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.Burgundy.withOpacity(0.1),
+        color: AppColors.burgundy.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.Burgundy.withOpacity(0.4), width: 1.2),
+        border: Border.all(
+          color: AppColors.burgundy.withValues(alpha: 0.4),
+          width: 1.2,
+        ),
       ),
       child: Text(
         'الميزانية أو عدد الأشخاص غير مناسبين',
         textAlign: TextAlign.center,
         style: GoogleFonts.amiri(
-          color: AppColors.Burgundy,
+          color: AppColors.burgundy,
           fontSize: 16,
           fontWeight: FontWeight.bold,
         ),
@@ -362,7 +266,7 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
       height: 52,
       child: ElevatedButton.icon(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.Burgundy,
+          backgroundColor: AppColors.burgundy,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -374,11 +278,11 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
             ),
           ),
         ),
-        icon: Icon(Icons.card_giftcard, color: AppColors.Gold),
+        icon: Icon(Icons.card_giftcard, color: AppColors.gold),
         label: Text(
           'تصميم بطاقة الدعوة الخاصة بمناسبتك',
           style: GoogleFonts.amiri(
-            color: AppColors.Beige,
+            color: AppColors.beige,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -388,12 +292,9 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
   }
 
   Widget _buildBudgetCard(double remaining) {
-    final labelStyle = GoogleFonts.amiri(
-      color: AppColors.Beige,
-      fontSize: 15,
-    );
+    final labelStyle = GoogleFonts.amiri(color: AppColors.beige, fontSize: 15);
     final valueStyle = GoogleFonts.amiri(
-      color: AppColors.Gold,
+      color: AppColors.gold,
       fontSize: 16,
       fontWeight: FontWeight.bold,
     );
@@ -401,21 +302,17 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.Burgundy,
+        color: AppColors.burgundy,
         borderRadius: BorderRadius.circular(24),
-        // Two layered shadows instead of one flat drop shadow, so the card
-        // reads as raised off the page on every edge (not just underneath)
-        // — a soft wide ambient glow all around it, plus a tighter, darker
-        // shadow grounding it below.
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.16),
+            color: Colors.black.withValues(alpha: 0.16),
             blurRadius: 30,
             spreadRadius: 2,
             offset: const Offset(0, 10),
           ),
           BoxShadow(
-            color: Colors.black.withOpacity(0.22),
+            color: Colors.black.withValues(alpha: 0.22),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -424,9 +321,6 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // "الميزانية" leads (reads first, on the right in RTL) and
-          // "المصروف منها" trails (left) — same order in both rows so the
-          // amounts land directly under their own label.
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -448,8 +342,8 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
             child: LinearProgressIndicator(
               value: _spentRatio,
               minHeight: 8,
-              color: AppColors.Gold,
-              backgroundColor: AppColors.Beige.withOpacity(0.22),
+              color: AppColors.gold,
+              backgroundColor: AppColors.beige.withValues(alpha: 0.22),
             ),
           ),
           const SizedBox(height: 18),
@@ -490,18 +384,6 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
         if (recommendations.isEmpty) {
           return _servicesFallback('لا توجد توصيات متاحة حاليًا');
         }
-
-        // Tracks exactly what's currently shown in each card (post any
-        // "البديل" swaps), for [_buildFavoriteButton] to save as the plan's
-        // provider list — not what's recomputed here, which stays at index
-        // 0 for every card. Only (re)seeded when the set of cards actually
-        // changes (in practice: once, when real provider data first
-        // arrives) so a swap made before this rebuilds isn't lost.
-        //
-        // [_displayedCardPrices] is reset alongside it, for the same
-        // reason: a fresh set of cards means the old per-index prices no
-        // longer mean anything, and each new card will re-seed its own
-        // entry via onDisplayedPriceChanged right after it builds.
         if (_displayedPlanProviders == null ||
             _displayedPlanProviders!.length != recommendations.length) {
           _displayedPlanProviders = [
@@ -511,12 +393,7 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
           _displayedCardPrices = {};
         }
 
-        final selectedGroups =
-            recommendations.map((r) => r.group).toSet();
-        // A group's normalized share is meant for that whole category, but
-        // it can now back multiple cards (one per selected need in it) —
-        // split evenly among just the cards actually sharing it, so e.g.
-        // "الديكور" with 4 selected needs doesn't quadruple-count its 15%.
+        final selectedGroups = recommendations.map((r) => r.group).toSet();
         final cardsPerGroup = <String, int>{};
         for (final r in recommendations) {
           cardsPerGroup[r.group] = (cardsPerGroup[r.group] ?? 0) + 1;
@@ -528,10 +405,6 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
             children: [
               _buildServicesHeader(recommendations.length),
               const SizedBox(height: 14),
-              // A fixed height (rather than shrink-wrapping) so this list
-              // scrolls on its own within the card instead of just adding
-              // to the whole page's length — the outer SingleChildScrollView
-              // in build() still handles the rest of the page normally.
               SizedBox(
                 height: 420,
                 child: ListView.builder(
@@ -563,17 +436,13 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
     );
   }
 
-  // Groups the recommendations header + card list (or the fallback
-  // message) inside one big card — a shade darker than the page's own
-  // Beige background, with a Burgundy border and a shadow tying the whole
-  // section together instead of each card floating separately on the page.
   Widget _buildServicesCard({required Widget child}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFFE9DEC7),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.Burgundy, width: 1.5),
+        border: Border.all(color: AppColors.burgundy, width: 1.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.1),
@@ -586,15 +455,7 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
     );
   }
 
-  // See _buildServicesSection's assignment for what this holds and why.
   List<Providers>? _displayedPlanProviders;
-
-  /// One card's worth of recommendation per selected need (see
-  /// [OnboardingAnswers.selectedNeedsIds]), in selection order — so every
-  /// need the user picked in question 5 gets its own card, even when
-  /// several needs share the same top-level category. [candidates] is
-  /// every provider matching that specific need; the card shows
-  /// [candidates].first and lets "البديل" cycle through the rest.
   List<_CategoryRecommendation> _recommendationsByCategory(
     List<Providers> allProviders,
   ) {
@@ -607,15 +468,14 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
       final seenIds = <int?>{};
       final candidates = <Providers>[];
       for (final provider in allProviders) {
-        final categoryMatches = provider.category == match.category &&
+        final categoryMatches =
+            provider.category == match.category &&
             (match.subCategory == null ||
                 provider.subCategory == match.subCategory);
         if (!categoryMatches || seenIds.contains(provider.id)) continue;
         seenIds.add(provider.id);
         candidates.add(provider);
       }
-      // A need with no matching provider at all contributes no card,
-      // rather than one with an empty candidate list.
       if (candidates.isNotEmpty) {
         recommendations.add(_CategoryRecommendation(needId, group, candidates));
       }
@@ -645,7 +505,7 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
         Text(
           'التوصيات',
           style: GoogleFonts.amiri(
-            color: AppColors.Burgundy,
+            color: AppColors.burgundy,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -655,7 +515,7 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
           width: 22,
           height: 22,
           decoration: BoxDecoration(
-            color: AppColors.Gold,
+            color: AppColors.gold,
             shape: BoxShape.circle,
           ),
           alignment: Alignment.center,
@@ -681,7 +541,7 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
             'يرجى الانتظار حتى تحميل التوصيات أولاً',
             style: GoogleFonts.amiri(),
           ),
-          backgroundColor: AppColors.Burgundy,
+          backgroundColor: AppColors.burgundy,
         ),
       );
       return;
@@ -698,8 +558,11 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('سجّل الدخول لحفظ الخطة بالمفضلة', style: GoogleFonts.amiri()),
-          backgroundColor: AppColors.Burgundy,
+          content: Text(
+            'سجّل الدخول لحفظ الخطة بالمفضلة',
+            style: GoogleFonts.amiri(),
+          ),
+          backgroundColor: AppColors.burgundy,
         ),
       );
       return;
@@ -707,17 +570,15 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('تعذّر حفظ الخطة الآن، حاول لاحقًا', style: GoogleFonts.amiri()),
-          backgroundColor: AppColors.Burgundy,
+          content: Text(
+            'تعذّر حفظ الخطة الآن، حاول لاحقًا',
+            style: GoogleFonts.amiri(),
+          ),
+          backgroundColor: AppColors.burgundy,
         ),
       );
       return;
     }
-
-    // Saved successfully — go straight to the favorites tab to show it,
-    // rather than just a toast on this same screen. pushReplacement (not
-    // push) to match how AppBottomNavBar's own tab switches work, so this
-    // doesn't leave an extra RecommendedPlanScreen underneath on the stack.
     if (!context.mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => const FavoritesScreen()),
@@ -731,7 +592,7 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
           decoration: BoxDecoration(
-            color: AppColors.Burgundy,
+            color: AppColors.burgundy,
             borderRadius: BorderRadius.circular(22),
           ),
           child: Row(
@@ -741,10 +602,14 @@ class _RecommendedPlanScreenState extends State<RecommendedPlanScreen> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AppColors.Gold,
+                  color: AppColors.gold,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.favorite, color: AppColors.Burgundy, size: 20),
+                child: Icon(
+                  Icons.favorite,
+                  color: AppColors.burgundy,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               Text(
@@ -791,16 +656,14 @@ class _CircleIconButton extends StatelessWidget {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
           ],
         ),
         alignment: Alignment.center,
-        // 24: matches question_screen.dart's back button (IconButton's
-        // default iconSize, left unspecified there).
-        child: Icon(icon, color: AppColors.Burgundy, size: 24),
+        child: Icon(icon, color: AppColors.burgundy, size: 24),
       ),
     );
   }
@@ -820,7 +683,7 @@ class _StatChip extends StatelessWidget {
         Text(
           label,
           style: GoogleFonts.amiri(
-            color: AppColors.Beige.withOpacity(0.75),
+            color: AppColors.beige.withValues(alpha: 0.75),
             fontSize: 12,
           ),
         ),
@@ -828,7 +691,7 @@ class _StatChip extends StatelessWidget {
         Text(
           value,
           style: GoogleFonts.amiri(
-            color: AppColors.Beige,
+            color: AppColors.beige,
             fontSize: 15,
             fontWeight: FontWeight.bold,
           ),
@@ -838,28 +701,11 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-/// One recommendation card. [candidates] is every provider matching the
-/// card's category (never empty) — the card shows candidates[_index]
-/// (starting at the first) and "البديل" cycles to the next one, wrapping
-/// around; it's disabled when there's nothing else to cycle to.
 class _ServiceCard extends StatefulWidget {
   final List<Providers> candidates;
-  // This card's normalized share of the budget (see
-  // _RecommendedPlanScreenState._normalizedShareFraction) — shown, and
-  // counted, as this card's price whenever the currently displayed
-  // candidate has no real minPrice/maxPrice of its own.
   final num fallbackPrice;
   final void Function(Providers provider) onOpenDetail;
-  // Fired whenever "البديل" changes which candidate is shown, so the
-  // parent can track it for the full-plan favorite save — see
-  // _buildServicesSection's _displayedPlanProviders.
   final void Function(Providers provider) onDisplayedProviderChanged;
-  // Fired with exactly the price shown on this card (real, or
-  // [fallbackPrice] when the candidate has none) — right after the card
-  // first builds, and again on every "البديل" swap. The parent sums these
-  // across all cards for "المصروف"; see
-  // _RecommendedPlanScreenState._displayedCardPrices. This must always
-  // match [_priceText] below — they read the same [_displayedPrice].
   final void Function(num displayedPrice) onDisplayedPriceChanged;
 
   const _ServiceCard({
@@ -882,15 +728,13 @@ class _ServiceCardState extends State<_ServiceCard> {
   bool get _hasAlternate => widget.candidates.length > 1;
 
   String get _subtitle {
-    final parts = [_provider.category, _provider.subCategory]
-        .where((s) => s != null && s.isNotEmpty)
-        .cast<String>();
+    final parts = [
+      _provider.category,
+      _provider.subCategory,
+    ].where((s) => s != null && s.isNotEmpty).cast<String>();
     return parts.join(' - ');
   }
 
-  // The price actually printed on this card, real or fallback — the sole
-  // basis for both [_priceText] and the onDisplayedPriceChanged reports,
-  // so the two can never diverge.
   num get _displayedPrice =>
       _provider.minPrice ?? _provider.maxPrice ?? widget.fallbackPrice;
 
@@ -899,9 +743,6 @@ class _ServiceCardState extends State<_ServiceCard> {
   @override
   void initState() {
     super.initState();
-    // Deferred to after the first frame: reporting synchronously here
-    // would call the parent's setState while it's still mid-build (this
-    // card is being created as part of the parent's own build).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) widget.onDisplayedPriceChanged(_displayedPrice);
     });
@@ -928,7 +769,7 @@ class _ServiceCardState extends State<_ServiceCard> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message, style: GoogleFonts.amiri()),
-        backgroundColor: AppColors.Burgundy,
+        backgroundColor: AppColors.burgundy,
       ),
     );
   }
@@ -938,8 +779,6 @@ class _ServiceCardState extends State<_ServiceCard> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Stack(
-        // Lets the favorite heart poke slightly outside the card's own
-        // bounds at the top-left corner, instead of being cut off there.
         clipBehavior: Clip.none,
         children: [
           Material(
@@ -948,17 +787,13 @@ class _ServiceCardState extends State<_ServiceCard> {
               onTap: () => widget.onOpenDetail(_provider),
               borderRadius: BorderRadius.circular(20),
               child: Container(
-                // Extra top padding clears space under the floating heart
-                // badge (which sits at top:10, 36px tall, so its bottom
-                // edge is at y=46) so it doesn't cover the price text next
-                // to it — 30 wasn't enough and let the badge overlap it.
                 padding: const EdgeInsets.fromLTRB(20, 50, 20, 20),
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
+                      color: Colors.black.withValues(alpha: 0.06),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
@@ -974,7 +809,7 @@ class _ServiceCardState extends State<_ServiceCard> {
                           height: 52,
                           clipBehavior: Clip.antiAlias,
                           decoration: BoxDecoration(
-                            color: AppColors.Beige,
+                            color: AppColors.beige,
                             shape: BoxShape.circle,
                           ),
                           child: Image.asset(
@@ -990,7 +825,7 @@ class _ServiceCardState extends State<_ServiceCard> {
                               Text(
                                 _provider.name ?? 'بدون اسم',
                                 style: GoogleFonts.amiri(
-                                  color: AppColors.Burgundy,
+                                  color: AppColors.burgundy,
                                   fontSize: 19,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -1015,7 +850,7 @@ class _ServiceCardState extends State<_ServiceCard> {
                             Text(
                               _priceText,
                               style: GoogleFonts.amiri(
-                                color: AppColors.Burgundy,
+                                color: AppColors.burgundy,
                                 fontSize: 19,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -1034,15 +869,12 @@ class _ServiceCardState extends State<_ServiceCard> {
                     const SizedBox(height: 14),
                     Divider(color: Colors.grey.shade100, height: 1),
                     const SizedBox(height: 10),
-                    // "البديل" lands on the right under this screen's RTL
-                    // Directionality, same as every other right-led row
-                    // here — "المفضلة" moved to the floating heart at the
-                    // card's top-left corner instead of living in this row.
                     Row(
                       children: [
                         TextButton.icon(
-                          onPressed:
-                              _hasAlternate ? _showNextAlternative : null,
+                          onPressed: _hasAlternate
+                              ? _showNextAlternative
+                              : null,
                           style: TextButton.styleFrom(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
@@ -1050,7 +882,7 @@ class _ServiceCardState extends State<_ServiceCard> {
                             ),
                             minimumSize: Size.zero,
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            foregroundColor: AppColors.Burgundy,
+                            foregroundColor: AppColors.burgundy,
                             disabledForegroundColor: Colors.grey.shade400,
                           ),
                           icon: const Icon(Icons.swap_horiz, size: 22),
@@ -1069,10 +901,6 @@ class _ServiceCardState extends State<_ServiceCard> {
               ),
             ),
           ),
-          // Sitting fully on the card's flat surface (not poking past the
-          // rounded corner like before) — overlapping that curve gave the
-          // badge a jagged, uneven edge where its own circular outline
-          // crossed the card's corner radius instead of a clean circle.
           Positioned(
             top: 10,
             left: 10,
@@ -1082,17 +910,21 @@ class _ServiceCardState extends State<_ServiceCard> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AppColors.Gold,
+                  color: AppColors.gold,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.18),
+                      color: Colors.black.withValues(alpha: 0.18),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
                   ],
                 ),
-                child: Icon(Icons.favorite, color: AppColors.Burgundy, size: 17),
+                child: Icon(
+                  Icons.favorite,
+                  color: AppColors.burgundy,
+                  size: 17,
+                ),
               ),
             ),
           ),

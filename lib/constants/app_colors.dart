@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static var Burgundy = Color(0xFF4A1620);
-  static var Burgundy_White = Color.fromARGB(255, 104, 62, 70);
-  static var Beige = Color.fromARGB(255, 244, 238, 228);
-  static var Gold = Color(0xFFD4AF6A);
-  static var white = Colors.white;
+  static const Color burgundy = Color(0xFF4A1620);
+  static const Color burgundyWhite = Color.fromARGB(255, 104, 62, 70);
+  static const Color beige = Color.fromARGB(255, 244, 238, 228);
+  static const Color gold = Color(0xFFD4AF6A);
+  static const Color white = Colors.white;
 }

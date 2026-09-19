@@ -14,20 +14,17 @@ class CreatAcountScreen extends StatefulWidget {
 class _AuthScreenState extends State<CreatAcountScreen> {
   int isSignUp = 0;
 
-  final Color backgroundColor = AppColors.Beige;
-  final Color topBubbleColor = AppColors.Burgundy;
+  final Color backgroundColor = AppColors.beige;
+  final Color topBubbleColor = AppColors.burgundy;
 
-  final Color toggleContainerBg = AppColors.white;             
-  final Color toggleActiveColor = AppColors.Burgundy_White; 
-  final Color toggleInactiveColor = const Color.fromARGB(0, 134, 78, 78);      
-  final Color toggleActiveTextColor = AppColors.white;         
-  final Color toggleInactiveTextColor = Colors.grey;       
+  final Color toggleContainerBg = AppColors.white;
+  final Color toggleActiveColor = AppColors.burgundyWhite;
+  final Color toggleInactiveColor = const Color.fromARGB(0, 134, 78, 78);
+  final Color toggleActiveTextColor = AppColors.white;
+  final Color toggleInactiveTextColor = Colors.grey;
 
-  final Color mainButtonColor = AppColors.Burgundy_White;
+  final Color mainButtonColor = AppColors.burgundyWhite;
   final Color mainButtonTextColor = AppColors.white;
-
-  // "unus" image, top-right of the upper bubble. Adjust these to freely
-  // resize/reposition it within the bubble.
   final double unusWidth = 240;
   final double unusHeight = 240;
   final double unusTop = 40;
@@ -35,7 +32,8 @@ class _AuthScreenState extends State<CreatAcountScreen> {
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
 
   @override
   void dispose() {
@@ -46,16 +44,11 @@ class _AuthScreenState extends State<CreatAcountScreen> {
   }
 
   Future<void> _skipToOnboarding() async {
-    // "تخطي الآن" only skips the sign-in form — it doesn't clear an
-    // existing Supabase session. Without this, a device that was ever
-    // really signed in (even in an earlier test) stays signed in through
-    // "skip", so screens gated on being signed in (SignInRequiredView)
-    // never actually show for the guest flow this button is meant for.
     await Supabase.instance.client.auth.signOut();
     if (!mounted) return;
     startOnboardingFlow(context);
   }
-// 1. ضعي الدالة هنا 👇 داخل الـ State
+
   Future<void> _handleAuthAction() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
@@ -75,10 +68,7 @@ class _AuthScreenState extends State<CreatAcountScreen> {
       final supabase = Supabase.instance.client;
 
       if (isSignUp == 1) {
-        await supabase.auth.signUp(
-          email: email,
-          password: password,
-        );
+        await supabase.auth.signUp(email: email, password: password);
         _showSnackBar('تم إنشاء الحساب بنجاح!');
       } else {
         await supabase.auth.signInWithPassword(
@@ -90,8 +80,7 @@ class _AuthScreenState extends State<CreatAcountScreen> {
 
       if (!mounted) return;
       startOnboardingFlow(context);
-} on AuthException catch (e) {
-      // استبدال رسائل الأخطاء الإنجليزية برسائل عربية واضحة
+    } on AuthException catch (e) {
       String arabicMessage = _translateAuthError(e.message);
       _showSnackBar(arabicMessage);
     } catch (e) {
@@ -99,16 +88,15 @@ class _AuthScreenState extends State<CreatAcountScreen> {
     }
   }
 
-  // 2. وضعي دالة الـ SnackBar بجانبها هنا 👇
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message, style: GoogleFonts.amiri(fontSize: 16)),
-        backgroundColor: AppColors.Burgundy,
+        backgroundColor: AppColors.burgundy,
       ),
     );
   }
-  // دالة لترجمة أخطاء Supabase الشهيرة إلى العربية
+
   String _translateAuthError(String englishMessage) {
     if (englishMessage.contains('Invalid login credentials')) {
       return 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
@@ -121,9 +109,9 @@ class _AuthScreenState extends State<CreatAcountScreen> {
     } else if (englishMessage.contains('Invalid email')) {
       return 'البريد الإلكتروني غير صالح';
     }
-    // إذا كان خطأ آخر لم نكتبه، نرجع رسالة عامة أو الرسالة نفسها
     return 'حدث خطأ أثناء المصادقة، يجدر المحاولة مرة أخرى';
   }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -132,266 +120,252 @@ class _AuthScreenState extends State<CreatAcountScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: backgroundColor,
-        // Keep the bottom "skip" bubble fixed in place instead of being
-        // pushed up when the keyboard appears; fields still scroll into
-        // view via the SingleChildScrollView below.
         resizeToAvoidBottomInset: false,
-        // Scaffold.body gives its child loose constraints, so a bare Stack
-        // shrinks to fit its tallest non-positioned child (the scroll
-        // view's content) instead of filling the screen. That left
-        // Positioned(bottom: 0) anchored short of the real screen edge.
-        // Forcing the Stack to the full screen size fixes it.
         body: SizedBox(
           width: size.width,
           height: size.height,
           child: Stack(
-          children: [
-
-            ClipPath(
-              clipper: ConcaveBubbleClipper(),
-              child: SizedBox(
-                width: size.width,
-                // Derived from width (not height) so the bubble keeps the
-                // same proportions/curve on any screen aspect ratio instead
-                // of stretching or shrinking abnormally.
-                height: size.width * 0.93,
-                child: Stack(
-                  children: [
-                    // Zoomed in a bit past a plain BoxFit.cover (which would
-                    // show the background at its normal, more tightly
-                    // tiled scale) so the pattern reads bigger/bolder
-                    // within the bubble instead of busy and small.
-                    Positioned.fill(
-                      child: Transform.scale(
-                        scale: 1.3,
-                        child: Image.asset(
-                          'assets/images/hello_background.png',
-                          fit: BoxFit.cover,
+            children: [
+              ClipPath(
+                clipper: ConcaveBubbleClipper(),
+                child: SizedBox(
+                  width: size.width,
+                  height: size.width * 0.93,
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: Transform.scale(
+                          scale: 1.3,
+                          child: Image.asset(
+                            'assets/images/hello_background.png',
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
-                    ),
-                    SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 28.0, top: 20.0, left: 28.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 4),
+                      SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.only(
+                            right: 28.0,
+                            top: 20.0,
+                            left: 28.0,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [const SizedBox(height: 4)],
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: unusTop,
+                        right: unusRight,
+                        child: Image.asset(
+                          'assets/images/unus.png',
+                          width: unusWidth,
+                          height: unusHeight,
+                          fit: BoxFit.contain,
+                          color: AppColors.beige,
+                          colorBlendMode: BlendMode.srcIn,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
 
+              SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    children: [
+                      SizedBox(height: size.height * 0.35),
+
+                      Container(
+                        height: 52,
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: toggleContainerBg,
+                          borderRadius: BorderRadius.circular(26),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.06),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    isSignUp = 0;
+                                  });
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  decoration: BoxDecoration(
+                                    color: isSignUp == 0
+                                        ? toggleActiveColor
+                                        : toggleInactiveColor,
+                                    borderRadius: BorderRadius.circular(22),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    "تسجيل دخول",
+                                    style: GoogleFonts.amiri(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                      color: isSignUp == 0
+                                          ? toggleActiveTextColor
+                                          : toggleInactiveTextColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    isSignUp = 1;
+                                  });
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  decoration: BoxDecoration(
+                                    color: isSignUp == 1
+                                        ? toggleActiveColor
+                                        : toggleInactiveColor,
+                                    borderRadius: BorderRadius.circular(22),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    "مستخدم جديد",
+                                    style: GoogleFonts.amiri(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                      color: isSignUp == 1
+                                          ? toggleActiveTextColor
+                                          : toggleInactiveTextColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                    Positioned(
-                      top: unusTop,
-                      right: unusRight,
-                      // Tinted to match "تخطي الان"'s color below, instead
-                      // of the golden shade baked into the source image.
-                      child: Image.asset(
-                        'assets/images/unus.png',
-                        width: unusWidth,
-                        height: unusHeight,
-                        fit: BoxFit.contain,
-                        color: AppColors.Beige,
-                        colorBlendMode: BlendMode.srcIn,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
 
-            SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  children: [
-                    SizedBox(height: size.height * 0.35),
+                      const SizedBox(height: 25),
 
-                    Container(
-                      height: 52,
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: toggleContainerBg,
-                        borderRadius: BorderRadius.circular(26),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.06),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          )
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  isSignUp = 0;
-                                });
-                              },
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                decoration: BoxDecoration(
-                                  color: isSignUp == 0 ? toggleActiveColor : toggleInactiveColor,
-                                  borderRadius: BorderRadius.circular(22),
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  "تسجيل دخول",
-                                  style: 
-                                  GoogleFonts.amiri(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                    color: isSignUp == 0 ? toggleActiveTextColor : toggleInactiveTextColor,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  isSignUp = 1;
-                                });
-                              },
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                decoration: BoxDecoration(
-                                  color: isSignUp == 1 ? toggleActiveColor : toggleInactiveColor,
-                                  borderRadius: BorderRadius.circular(22),
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  "مستخدم جديد",
-                                  style: GoogleFonts.amiri(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                    color: isSignUp == 1 ? toggleActiveTextColor : toggleInactiveTextColor,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 25),
-
-                    if (isSignUp == 0) ...[
-                      _buildCustomTextField(
-                        labelText: "البريد الإلكتروني" ,
-                        hintText: "أدخل البريد الإلكتروني",
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 18),
-                      _buildCustomTextField(
-
-                        labelText: "كلمة المرور",
-                        hintText: "أدخل كلمة المرور",
-                        controller: _passwordController,
-                        isObscure: true,
-                      ),
-                    ] else ...[
-                      _buildCustomTextField(
-                        labelText: "البريد الإلكتروني",
-                        hintText: "أدخل البريد الإلكتروني",
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 18),
-                      _buildCustomTextField(
-                        labelText: "كلمة المرور",
-                        hintText: "أدخل كلمة المرور",
-                        controller: _passwordController,
-                        isObscure: true,
-                      ),
-                      const SizedBox(height: 18),
-                      _buildCustomTextField(
-                        labelText: "تأكيد كلمة المرور",
-                        hintText: "أعد كتابة كلمة المرور",
-                        controller: _confirmPasswordController,
-                        isObscure: true,
-                      ),
-                    ],
-
-                    const SizedBox(height: 28),
-
-                    SizedBox(
-                      width: 170,
-                      height: 42,
-                      child: ElevatedButton(
-                        onPressed:_handleAuthAction,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: mainButtonColor,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(25),
-                          ),
-                          elevation: 2,
+                      if (isSignUp == 0) ...[
+                        _buildCustomTextField(
+                          labelText: "البريد الإلكتروني",
+                          hintText: "أدخل البريد الإلكتروني",
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
                         ),
-                        child: Text(
-                          "متابعة",
-                          style: GoogleFonts.amiri(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: mainButtonTextColor,
-                          ),
+                        const SizedBox(height: 18),
+                        _buildCustomTextField(
+                          labelText: "كلمة المرور",
+                          hintText: "أدخل كلمة المرور",
+                          controller: _passwordController,
+                          isObscure: true,
                         ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 100),
-                  ],
-                ),
-              ),
-            ),
-
-            Positioned(
-              bottom: 0,
-              left: 0,
-              child: GestureDetector(
-                onTap: _skipToOnboarding,
-                child: ClipPath(
-                  clipper: BottomBubbleClipper(),
-                  child: SizedBox(
-                    width: 140,
-                    height: 140,
-                    child: Stack(
-                      children: [
-                        // Same zoomed-in scale as the top bubble's
-                        // background, so the pattern reads at a matching
-                        // size in both places.
-                        Positioned.fill(
-                          child: Transform.scale(
-                            scale: 3,
-                            child: Image.asset(
-                              'assets/images/hello_background.png',
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                      ] else ...[
+                        _buildCustomTextField(
+                          labelText: "البريد الإلكتروني",
+                          hintText: "أدخل البريد الإلكتروني",
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
                         ),
-                        Align(
-                          alignment: Alignment(-0.4, 0.4),
-                          child: Text(
-                            "تخطي الان",
-                            style: GoogleFonts.amiri(
-                              color: AppColors.Beige,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                        const SizedBox(height: 18),
+                        _buildCustomTextField(
+                          labelText: "كلمة المرور",
+                          hintText: "أدخل كلمة المرور",
+                          controller: _passwordController,
+                          isObscure: true,
+                        ),
+                        const SizedBox(height: 18),
+                        _buildCustomTextField(
+                          labelText: "تأكيد كلمة المرور",
+                          hintText: "أعد كتابة كلمة المرور",
+                          controller: _confirmPasswordController,
+                          isObscure: true,
                         ),
                       ],
+
+                      const SizedBox(height: 28),
+
+                      SizedBox(
+                        width: 170,
+                        height: 42,
+                        child: ElevatedButton(
+                          onPressed: _handleAuthAction,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: mainButtonColor,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            elevation: 2,
+                          ),
+                          child: Text(
+                            "متابعة",
+                            style: GoogleFonts.amiri(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: mainButtonTextColor,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+                ),
+              ),
+
+              Positioned(
+                bottom: 0,
+                left: 0,
+                child: GestureDetector(
+                  onTap: _skipToOnboarding,
+                  child: ClipPath(
+                    clipper: BottomBubbleClipper(),
+                    child: SizedBox(
+                      width: 140,
+                      height: 140,
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
+                            child: Transform.scale(
+                              scale: 3,
+                              child: Image.asset(
+                                'assets/images/hello_background.png',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          Align(
+                            alignment: Alignment(-0.4, 0.4),
+                            child: Text(
+                              "تخطي الان",
+                              style: GoogleFonts.amiri(
+                                color: AppColors.beige,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            )
-          ],
+            ],
           ),
         ),
       ),
@@ -414,7 +388,7 @@ class _AuthScreenState extends State<CreatAcountScreen> {
         labelText: labelText,
         hintText: hintText,
         alignLabelWithHint: true,
-        
+
         labelStyle: GoogleFonts.amiri(
           color: Colors.grey.shade600,
           fontSize: 16,
@@ -424,14 +398,14 @@ class _AuthScreenState extends State<CreatAcountScreen> {
           fontWeight: FontWeight.bold,
           fontSize: 15,
         ),
-        hintStyle: GoogleFonts.amiri(
-          color: Colors.grey.shade400,
-          fontSize: 15,
-        ),
+        hintStyle: GoogleFonts.amiri(color: Colors.grey.shade400, fontSize: 15),
 
         filled: true,
         fillColor: AppColors.white,
-        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 16,
+          horizontal: 20,
+        ),
 
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
@@ -456,8 +430,10 @@ class ConcaveBubbleClipper extends CustomClipper<Path> {
     var endPoint = Offset(size.width, size.height * 0.50);
 
     path.quadraticBezierTo(
-      controlPoint.dx, controlPoint.dy,
-      endPoint.dx, endPoint.dy,
+      controlPoint.dx,
+      controlPoint.dy,
+      endPoint.dx,
+      endPoint.dy,
     );
 
     path.lineTo(size.width, 0);
@@ -475,8 +451,10 @@ class BottomBubbleClipper extends CustomClipper<Path> {
     final path = Path();
     path.moveTo(0, 0);
     path.quadraticBezierTo(
-      size.width * 0.85, size.height * 0.15,
-      size.width, size.height,
+      size.width * 0.85,
+      size.height * 0.15,
+      size.width,
+      size.height,
     );
     path.lineTo(0, size.height);
     path.close();

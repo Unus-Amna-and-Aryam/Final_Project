@@ -5,28 +5,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:final_project/constants/app_colors.dart';
 import 'package:final_project/widgets/app_header.dart';
 
-/// SharedPreferences key the display name is saved under — read back by
-/// ProfileScreen to show under the profile circle. There is currently no
-/// `users`/`profiles` table in the Supabase schema (see
-/// supabase/favorites_schema.sql) to attach a display name to the signed-in
-/// account, so this is stored locally on the device only, as a stand-in
-/// until such a table exists. This also means the name does not follow the
-/// user to another device or survive a reinstall/skip-login flow.
 const String profileDisplayNameKey = 'profile_display_name';
-
-/// SharedPreferences key the local profile picture is saved under, as a
-/// base64-encoded string — read back by ProfileScreen to show in the
-/// profile circle. Same local-only reasoning and limitations as
-/// [profileDisplayNameKey]: no `users`/`profiles` table exists yet to
-/// attach a picture to the signed-in account. Stored as bytes rather than
-/// a file path (see ProfileScreen._pickProfileImage) so it works the same
-/// way on every build target, including a future Flutter Web build, which
-/// has no real filesystem to save a path into.
 const String profileImageKey = 'profile_image_base64';
 
-/// "معلوماتي": shows the current signed-in Supabase user's email
-/// (read-only) and lets the user set/edit the local display name shown on
-/// [ProfileScreen] (see [profileDisplayNameKey]).
 class MyInfoScreen extends StatefulWidget {
   const MyInfoScreen({super.key});
 
@@ -38,11 +19,6 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
   final _nameController = TextEditingController();
   bool _loading = true;
   bool _saving = false;
-
-  // Supabase Auth is the app's only sign-in mechanism (create_acount_screen.dart);
-  // its current session's email is the one real source of "current user's
-  // email" in the project. Null for anyone who reached onboarding via
-  // "تخطي الآن", which never authenticates.
   String? get _currentEmail => Supabase.instance.client.auth.currentUser?.email;
 
   @override
@@ -75,7 +51,7 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('تم حفظ الاسم', style: GoogleFonts.amiri()),
-        backgroundColor: AppColors.Burgundy,
+        backgroundColor: AppColors.burgundy,
       ),
     );
     Navigator.of(context).pop();
@@ -92,7 +68,7 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: AppColors.Beige,
+        backgroundColor: AppColors.beige,
         body: _loading
             ? const Center(child: CircularProgressIndicator())
             : SafeArea(
@@ -124,7 +100,7 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
                           _currentEmail ?? 'غير مسجّل الدخول',
                           style: GoogleFonts.amiri(
                             color: _currentEmail != null
-                                ? AppColors.Burgundy
+                                ? AppColors.burgundy
                                 : Colors.grey.shade500,
                             fontSize: 21,
                           ),
@@ -138,7 +114,7 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
                         textAlign: TextAlign.right,
                         textDirection: TextDirection.rtl,
                         style: GoogleFonts.amiri(
-                          color: AppColors.Burgundy,
+                          color: AppColors.burgundy,
                           fontSize: 21,
                         ),
                         decoration: InputDecoration(
@@ -159,8 +135,10 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide:
-                                BorderSide(color: AppColors.Burgundy, width: 1.5),
+                            borderSide: BorderSide(
+                              color: AppColors.burgundy,
+                              width: 1.5,
+                            ),
                           ),
                         ),
                       ),
@@ -170,7 +148,7 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
                         child: ElevatedButton(
                           onPressed: _saving ? null : _save,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.Burgundy,
+                            backgroundColor: AppColors.burgundy,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(24),
                             ),
@@ -181,13 +159,13 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
                                   height: 22,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: AppColors.Beige,
+                                    color: AppColors.beige,
                                   ),
                                 )
                               : Text(
                                   'حفظ',
                                   style: GoogleFonts.amiri(
-                                    color: AppColors.Beige,
+                                    color: AppColors.beige,
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -206,7 +184,7 @@ class _MyInfoScreenState extends State<MyInfoScreen> {
     return Text(
       label,
       style: GoogleFonts.amiri(
-        color: AppColors.Burgundy,
+        color: AppColors.burgundy,
         fontSize: 20,
         fontWeight: FontWeight.bold,
       ),
