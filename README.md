@@ -11,7 +11,7 @@
 [![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![RTL](https://img.shields.io/badge/Layout-Arabic%20RTL-4A1620)](#features)
  
-[**Live Demo**](https://unus-flutter.vercel.app) · [**Project Links**](https://unus-linktree.vercel.app) · [**Report an Issue**](../../issues)
+[**Live Demo**](https://unus-flutter.vercel.app) · [**Project Links**](https://unus-linktree.vercel.app) 
  
 </div>
 
@@ -55,8 +55,41 @@ Unus is our graduation project for **Flutter Bootcamp**.
 | 🌙 **Full Arabic support** | Right-to-left layout and the Amiri font on every screen. |
  
 ## Screenshots
- 
-Screenshots will be added soon. You can try the web version here: **[unus-flutter.vercel.app](https://unus-flutter.vercel.app)**
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/images/home.png" width="200"><br><sub>Welcome</sub></td>
+    <td align="center"><img src="assets/images/q1.png" width="200"><br><sub>Event type</sub></td>
+    <td align="center"><img src="assets/images/q4.png" width="200"><br><sub>Budget</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/images/q5.png" width="200"><br><sub>Needs</sub></td>
+    <td align="center"><img src="assets/images/plan.png" width="200"><br><sub>Recommended plan</sub></td>
+    <td align="center"><img src="assets/images/send.png" width="200"><br><sub>Invitation card</sub></td>
+  </tr>
+</table>
+
+<details>
+<summary><b>More screens</b></summary>
+
+<br>
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/images/signin.png" width="200"><br><sub>Sign in</sub></td>
+    <td align="center"><img src="assets/images/q2.png" width="200"><br><sub>Event location</sub></td>
+    <td align="center"><img src="assets/images/q3.png" width="200"><br><sub>Guest count</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/images/favorite.png" width="200"><br><sub>Favorites</sub></td>
+    <td align="center"><img src="assets/images/profile.png" width="200"><br><sub>Profile</sub></td>
+    <td></td>
+  </tr>
+</table>
+
+</details>
+
+> Try it yourself: **[unus-flutter.vercel.app](https://unus-flutter.vercel.app)**
  
 ## Tech Stack
  
@@ -88,6 +121,7 @@ supabase/
  
 <details>
 <summary><b>Key classes</b></summary>
+ 
 **Models**
  
 | Class | Responsibility |
