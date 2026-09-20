@@ -231,7 +231,7 @@ To report a bug or suggest an idea, open an [issue](../../issues) or a pull requ
 ---
  
 <div align="center">
-Built with 🤎 by Amna & Aryam as a graduation project for **Flutter Bootcamp**
+Built with 🤎 by Amna & Aryam as a graduation project for Flutter Bootcamp
  
 </div>
  
