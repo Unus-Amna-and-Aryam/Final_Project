@@ -2,7 +2,6 @@
 <img src="assets/images/logo_round.png" alt="Unus logo" width="120" />
 <h1>Unus · أُنس</h1>
  
-[**Live Demo**](https://unus-flutter.vercel.app) · [**Project Links**](https://unus-linktree.vercel.app) 
  
 **Plan your whole event in one place, from family gatherings to weddings.**
  
@@ -243,11 +242,11 @@ The logo is four gold rings linked together in a diamond shape. The rings repres
  
 | Name | Hex | Usage |
 |---|---|---|
-| Burgundy | `#4A1620` | Primary brand color: app bars, primary buttons, icons and most text |
-| Burgundy White | `#683E46` | Softer secondary accent: toggles and buttons on onboarding and sign-up |
-| Beige | `#F4EEE4` | Default background across the app |
-| Gold | `#D4AF6A` | Borders, selected states and badges |
-| White | `#FFFFFF` | Cards, input fields and elevated surfaces |
+| ![#4A1620](https://placehold.co/14x14/4A1620/4A1620.png) Burgundy | `#4A1620` | Primary brand color: app bars, primary buttons, icons and most text |
+| ![#683E46](https://placehold.co/14x14/683E46/683E46.png) Burgundy White | `#683E46` | Softer secondary accent: toggles and buttons on onboarding and sign-up |
+| ![#F4EEE4](https://placehold.co/14x14/F4EEE4/F4EEE4.png) Beige | `#F4EEE4` | Default background across the app |
+| ![#D4AF6A](https://placehold.co/14x14/D4AF6A/D4AF6A.png) Gold | `#D4AF6A` | Borders, selected states and badges |
+| ![#FFFFFF](https://placehold.co/14x14/FFFFFF/FFFFFF.png) White | `#FFFFFF` | Cards, input fields and elevated surfaces |
  
 All colors are defined in [`lib/constants/app_colors.dart`](lib/constants/app_colors.dart).
  
